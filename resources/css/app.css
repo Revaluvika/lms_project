@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* token fallback agar class seperti border-border tidak error */
+:root{
+  --border: 229 231 235; /* rgb parts */
+  --background: 255 255 255;
+  --foreground: 17 24 39;
+}
+
+/* custom small helpers */
+.hero-gradient {
+  background: linear-gradient(180deg, rgba(79,70,229,0.06) 0%, rgba(99,102,241,0.02) 100%);
+}
+
