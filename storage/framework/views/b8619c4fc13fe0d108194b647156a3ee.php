@@ -83,7 +83,7 @@
             </li>
 
             <li>
-                <a href="<?php echo e(route('jadwal.siswa')); ?>" class="sidebar-item">
+                <a href="<?php echo e(route('jadwal.index ')); ?>" class="sidebar-item">
                     <?php echo $__env->make('components.icons.jadwal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                     <span>Jadwal Pelajaran</span>
                 </a>

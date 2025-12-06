@@ -200,3 +200,8 @@ Route::get('/notif/count', function () {
                     ->count()
     ]);
 })->name('notif.count');
+
+Route::middleware(['auth', 'role:guru'])->group(function () {
+    Route::get('/nilai/create', [NilaiController::class, 'create'])->name('nilai.create');
+    Route::post('/nilai', [NilaiController::class, 'store'])->name('nilai.store');
+});

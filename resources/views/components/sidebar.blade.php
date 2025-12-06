@@ -95,7 +95,7 @@
             </li>
 
             <li>
-                <a href="{{ route('jadwal.siswa') }}" class="sidebar-item">
+                <a href="{{ route('jadwal.index ') }}" class="sidebar-item">
                     @include('components.icons.jadwal')
                     <span>Jadwal Pelajaran</span>
                 </a>
