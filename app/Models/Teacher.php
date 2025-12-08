@@ -7,10 +7,21 @@ use Illuminate\Database\Eloquent\Model;
 class Teacher extends Model
 {
     protected $fillable = [
-        'nama',
+        'user_id',
+        'school_id',
         'nip',
-        'mapel',
+        'specialization',
         'alamat',
         'telepon',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(School::class);
+    }
 }

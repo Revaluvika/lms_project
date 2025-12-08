@@ -1,5 +1,17 @@
 <?php
 
+use App\Http\Controllers\AcademicYearController;
+use App\Http\Controllers\ClassroomController;
+use App\Http\Controllers\Dashboard\DinasAdminController;
+use App\Http\Controllers\Dashboard\DinasController;
+use App\Http\Controllers\Dashboard\DinasReportController;
+use App\Http\Controllers\Dashboard\DinasSchoolController;
+use App\Http\Controllers\Dashboard\HeadmasterController;
+use App\Http\Controllers\Dashboard\SchoolAdminController;
+use App\Http\Controllers\Dashboard\TeacherController as DashboardTeacherController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SchoolRegistrationController;
+use App\Http\Controllers\SubjectController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
@@ -22,6 +34,8 @@ use App\Http\Controllers\SuperadminController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\SchoolEventController;
+use App\Http\Controllers\ClassScheduleController;
 use App\Models\Notification;
 use Illuminate\Support\Facades\Auth;
 
@@ -30,47 +44,126 @@ use Illuminate\Support\Facades\Auth;
 // =====================================================================
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
-// AUTH
-Route::get('/login/{role}', [AuthController::class, 'showLogin'])->name('login.role');
-Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+// For Registration new school
+Route::get('/register-school', [SchoolRegistrationController::class, 'index'])
+    ->name('school.register');
+Route::post('/register-school', [SchoolRegistrationController::class, 'store'])
+    ->name('school.register.store');
 
-Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-Route::post('/register', [AuthController::class, 'register'])->name('register.submit');
+// AUTH
+Route::middleware(['guest'])->group(function () {
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+    
+    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+    Route::post('/register', [AuthController::class, 'register'])->name('register.submit');
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::post('/logout', [AuthController::class,'logout'])->name('logout');
+});
+
+// =====================================================================
+// DASHBOARD GATEWAY
+// =====================================================================
+Route::middleware(['auth'])->get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
 // =====================================================================
 // DASHBOARD BY ROLE
 // =====================================================================
-Route::middleware(['auth', 'role:kepala_sekolah'])->get('/dashboard/kepala-sekolah', fn() => view('dashboard.kepala-sekolah'))->name('dashboard.kepsek');
-Route::middleware(['auth', 'role:guru'])->get('/dashboard/guru', fn() => view('dashboard.guru'))->name('dashboard.guru');
-Route::middleware(['auth', 'role:siswa'])->get('/dashboard/siswa', fn() => view('dashboard.siswa'))->name('dashboard.siswa');
-Route::middleware(['auth', 'role:orang_tua'])->get('/dashboard/orang-tua', fn() => view('dashboard.orang-tua'))->name('dashboard.orangtua');
-Route::middleware(['auth', 'role:dinas'])->get('/dashboard/dinas', fn() => view('dashboard.dinas'))->name('dashboard.dinas');
+Route::middleware(['auth', 'role:dinas'])->group(function () {
+    Route::get('/dashboard/dinas', [DinasController::class, 'index'])->name('dashboard.dinas');
+    
+    // School Reports Management
+    Route::get('/dinas/reports', [DinasReportController::class, 'incoming'])->name('dinas.reports.incoming');
+    Route::get('/dinas/reports/archive', [DinasReportController::class, 'archive'])->name('dinas.reports.archive');
+    Route::get('/dinas/reports/{id}', [DinasReportController::class, 'show'])->name('dinas.reports.show');
+    Route::post('/dinas/reports/{id}/review', [DinasReportController::class, 'review'])->name('dinas.reports.review'); // For feedback/status update
+});
+Route::middleware(['auth', 'role:admin_dinas'])->group(function () {
+    Route::get('/dashboard/dinas-admin', [DinasAdminController::class, 'index'])->name('dashboard.dinas.admin');
+    
+    // School Management
+    Route::get('/dinas/schools/pending', [DinasSchoolController::class, 'pending'])->name('dinas.schools.pending');
+    Route::post('/dinas/schools/{id}/approve', [DinasSchoolController::class, 'approve'])->name('dinas.schools.approve');
+    Route::post('/dinas/schools/{id}/reject', [DinasSchoolController::class, 'reject'])->name('dinas.schools.reject');
+    
+    Route::get('/dinas/schools/active', [DinasSchoolController::class, 'active'])->name('dinas.schools.active');
+    Route::post('/dinas/schools/{id}/suspend', [DinasSchoolController::class, 'suspend'])->name('dinas.schools.suspend');
+    Route::post('/dinas/schools/{id}/activate', [DinasSchoolController::class, 'activate'])->name('dinas.schools.activate');
+    Route::post('/dinas/schools/{id}/reset-password', [DinasSchoolController::class, 'resetPassword'])->name('dinas.schools.reset-password');
+});
+Route::middleware(['auth', 'role:kepala_sekolah'])->get('/dashboard/headmaster', [HeadmasterController::class, 'index'])->name('dashboard.headmaster');
+Route::middleware(['auth', 'role:admin_sekolah'])->get('/dashboard/school-admin', [SchoolAdminController::class, 'index'])->name('dashboard.school.admin');
+Route::middleware(['auth', 'role:guru'])->get('/dashboard/teacher', [DashboardTeacherController::class, 'index'])->name('dashboard.teacher');
+Route::middleware(['auth', 'role:siswa'])->get('/dashboard/student', [StudentController::class, 'index'])->name('dashboard.student');
+Route::middleware(['auth', 'role:orang_tua'])->get('/dashboard/parent', [ParentController::class, 'index'])->name('dashboard.parent');
 
 // =====================================================================
 // CRUD SISWA
 // =====================================================================
-Route::middleware(['auth', 'role:kepsek,guru'])->group(function () {
-    Route::get('/data-siswa', [StudentController::class, 'index'])->name('siswa.index');
-    Route::post('/data-siswa', [StudentController::class, 'store'])->name('siswa.store');
-    Route::post('/data-siswa/{id}', [StudentController::class, 'update'])->name('siswa.update');
-    Route::delete('/data-siswa/{id}', [StudentController::class, 'destroy'])->name('siswa.delete');
+// CRUD SISWA (Moved to Master Data)
+// =====================================================================
+
+
+// =====================================================================
+// MASTER DATA (ADMIN SEKOLAH)
+// =====================================================================
+Route::middleware(['auth', 'role:admin_sekolah'])->prefix('master')->name('master.')->group(function () {
+    // Academic Years
+    Route::resource('academic-years', AcademicYearController::class);
+    Route::post('academic-years/{id}/toggle', [AcademicYearController::class, 'toggleActive'])->name('academic-years.toggle');
+
+    // Subjects
+    Route::resource('subjects', SubjectController::class);
+
+    // Classrooms
+    Route::resource('classrooms', ClassroomController::class);
+
+    // Students
+    Route::get('students/template', [StudentController::class, 'downloadTemplate'])->name('students.template');
+    Route::post('students/import', [StudentController::class, 'import'])->name('students.import');
+    Route::post('students/{id}/reset-password', [StudentController::class, 'resetPassword'])->name('students.reset-password');
+    Route::post('students/{id}/mutation', [StudentController::class, 'mutation'])->name('students.mutation');
+    Route::resource('students', StudentController::class);
+
+    // Teachers
+    Route::get('teachers/template', [TeacherController::class, 'downloadTemplate'])->name('teachers.template');
+    Route::post('teachers/import', [TeacherController::class, 'import'])->name('teachers.import');
+    Route::post('teachers/{id}/reset-password', [TeacherController::class, 'resetPassword'])->name('teachers.reset-password');
+    Route::resource('teachers', TeacherController::class);
+
+    // Courses (Pengajaran)
+    Route::resource('courses', \App\Http\Controllers\CourseController::class);
 });
 
 // =====================================================================
 // CRUD GURU
 // =====================================================================
-Route::middleware(['auth', 'role:kepsek'])->group(function () {
-    Route::get('/data-guru', [TeacherController::class, 'index'])->name('guru.index');
-    Route::post('/data-guru', [TeacherController::class, 'store'])->name('guru.store');
-    Route::post('/data-guru/{id}', [TeacherController::class, 'update'])->name('guru.update');
-    Route::delete('/data-guru/{id}', [TeacherController::class, 'destroy'])->name('guru.delete');
+// =====================================================================
+// CRUD GURU (Moved to Master Data)
+// =====================================================================
+
+
+// =====================================================================
+// ACADEMIC & CURRICULUM
+// =====================================================================
+Route::middleware(['auth'])->group(function () {
+    // Academic Calendar
+    Route::get('/academic/calendar', [SchoolEventController::class, 'index'])->name('academic.calendar.index');
+    Route::get('/academic/calendar/events', [SchoolEventController::class, 'getEvents'])->name('academic.calendar.events');
+    Route::resource('academic/events', SchoolEventController::class)->except(['create', 'edit', 'index', 'show']); // API for Create/Update/Delete
+
+    // Class Schedules
+    Route::get('/academic/schedule', [ClassScheduleController::class, 'index'])->name('academic.schedule.index');
+    Route::get('/academic/schedule/data', [ClassScheduleController::class, 'getSchedule'])->name('academic.schedule.data');
+    Route::resource('academic/schedules', ClassScheduleController::class)->except(['create', 'edit', 'index', 'show']); // API for Create/Update/Delete
 });
 
 // =====================================================================
 // JADWAL
 // =====================================================================
-Route::middleware(['auth', 'role:guru,kepsek'])->group(function () {
+Route::middleware(['auth', 'role:guru,kepala_sekolah,admin_sekolah'])->group(function () {
     Route::get('/jadwal', [ScheduleController::class, 'index'])->name('jadwal.index');
     Route::post('/jadwal', [ScheduleController::class, 'store'])->name('jadwal.store');
     Route::post('/jadwal/{id}', [ScheduleController::class, 'update'])->name('jadwal.update');
@@ -169,9 +262,7 @@ Route::middleware('auth')->group(function () {
 
 });
 
-Route::get('/login', function () {
-    return redirect()->route('login.role', 'siswa');
-})->name('login');
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 
 // =====================================================================
 // NOTIFIKASI (Fix Error notif.index)
@@ -205,3 +296,28 @@ Route::middleware(['auth', 'role:guru'])->group(function () {
     Route::get('/nilai/create', [NilaiController::class, 'create'])->name('nilai.create');
     Route::post('/nilai', [NilaiController::class, 'store'])->name('nilai.store');
 });
+
+Route::get('/school/inactive', function () {
+    return view('errors.school_inactive');
+})->name('school.inactive')->middleware('auth');
+
+// =====================================================================
+// EMAIL VERIFICATION
+// =====================================================================
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+
+Route::get('/email/verify', function () {
+    return view('auth.verify-email');
+})->middleware('auth')->name('verification.notice');
+
+Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+    $request->fulfill();
+    
+    return redirect('/dashboard')->with('success', 'Email berhasil diverifikasi!');
+})->middleware(['auth', 'signed'])->name('verification.verify');
+
+Route::post('/email/verification-notification', function (Illuminate\Http\Request $request) {
+    $request->user()->sendEmailVerificationNotification();
+
+    return back()->with('message', 'Link verifikasi telah dikirim ulang!');
+})->middleware(['auth', 'throttle:6,1'])->name('verification.send');

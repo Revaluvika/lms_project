@@ -12,9 +12,9 @@ class AuthController extends Controller
     /**
      * Halaman login berdasarkan role
      */
-    public function showLogin($role)
+    public function showLogin()
     {
-        return view('auth.login', ['role' => $role]);
+        return view('auth.login');
     }
 
     /**
@@ -31,27 +31,17 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email'    => 'required|email',
+            'email' => 'required|email',
             'password' => 'required|min:6',
         ]);
 
         $credentials = $request->only('email', 'password');
 
-        if (!Auth::attempt($credentials)) {
+        if (! Auth::attempt($credentials)) {
             return back()->withErrors(['email' => 'Email atau password salah.']);
+        } else {
+            return redirect()->route('dashboard.index');
         }
-
-        $user = Auth::user();
-
-        // Redirect berdasarkan role
-        return match ($user->role) {
-            'dinas'           => redirect()->route('dashboard.dinas'),
-            'kepala_sekolah'  => redirect()->route('dashboard.kepsek'),
-            'guru'            => redirect()->route('dashboard.guru'),
-            'siswa'           => redirect()->route('dashboard.siswa'),
-            'orang_tua'       => redirect()->route('dashboard.orangtua'),
-            default           => redirect()->route('home'),
-        };
     }
 
     /**
@@ -60,20 +50,20 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
             'password' => 'required|min:6',
-            'role'     => 'required',
+            'role' => 'required',
         ]);
 
         User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
+            'name' => $request->name,
+            'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role'     => $request->role,
+            'role' => $request->role,
         ]);
 
-        return redirect()->route('login.role', ['role' => $request->role])
+        return redirect()->route('login.show')
             ->with('success', 'Akun berhasil dibuat! Silakan login.');
     }
 

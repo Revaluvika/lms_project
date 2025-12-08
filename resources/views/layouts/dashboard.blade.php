@@ -18,7 +18,7 @@
     @include('components.topbar')
 
     {{-- Konten Halaman --}}
-    <div class="ml-64 mt-20 p-8">
+    <div class="ml-64 mt-16 p-8">
         @yield('content')
     </div>
 

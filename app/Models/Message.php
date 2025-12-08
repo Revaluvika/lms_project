@@ -3,24 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\User;
 
 class Message extends Model
 {
     protected $fillable = [
-        'pengirim_id',
-        'penerima_id',
-        'pesan',
+        'user_id',
+        'message',
         'is_read',
     ];
 
-    public function pengirim()
+    public function user()
     {
-        return $this->belongsTo(User::class, 'pengirim_id');
-    }
-
-    public function penerima()
-    {
-        return $this->belongsTo(User::class, 'penerima_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

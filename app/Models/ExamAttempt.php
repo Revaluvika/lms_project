@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ExamAttempt extends Model
+{
+    protected $fillable = [
+        'exam_id',
+        'student_id',
+        'started_at',
+        'finished_at',
+        'total_score',
+    ];
+
+    protected $casts = [
+        'started_at' => 'datetime',
+        'finished_at' => 'datetime',
+    ];
+
+    public function exam()
+    {
+        return $this->belongsTo(Exam::class);
+    }
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function answers()
+    {
+        return $this->hasMany(ExamAnswer::class);
+    }
+}

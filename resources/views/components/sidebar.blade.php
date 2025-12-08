@@ -1,152 +1,372 @@
-<div class="w-64 bg-white shadow-lg h-screen fixed left-0 top-0 p-6">
-    <h1 class="text-xl font-bold mb-8">LearnFlux</h1>
+<div class="w-64 bg-slate-900 border-r border-slate-800 h-screen fixed left-0 top-0 flex flex-col shadow-2xl z-50">
+    {{-- Header / Logo --}}
+    <div class="h-16 flex items-center px-6 border-b border-slate-800">
+        <div class="flex items-center gap-3 cursor-pointer">
+            <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                <span class="text-white font-bold text-lg">L</span>
+            </div>
+            <h1 class="text-xl font-bold text-white tracking-tight">LearnFlux</h1>
+        </div>
+    </div>
 
-    @php $role = Auth::user()->role; @endphp
+    @php
+        use App\Enums\UserRole;
+        $activeUser = Auth::user();
+        $role = $activeUser->role; // This is now a UserRole Enum instance
+        
+        // Helper to check active route
+        if (!function_exists('isActive')) {
+            function isActive($patterns) {
+                return request()->routeIs($patterns) ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white';
+            }
+        }
 
-    <ul class="space-y-4">
+        // Determine dashboard route based on role
+        $dashboardRoute = match($role) {
+            UserRole::SUPERADMIN => 'superadmin.dashboard', // Added Superadmin Handling
+            UserRole::DINAS => 'dashboard.dinas',
+            UserRole::ADMIN_DINAS => 'dashboard.dinas.admin',
+            UserRole::KEPALA_SEKOLAH => 'dashboard.headmaster',
+            UserRole::ADMIN_SEKOLAH => 'dashboard.school.admin',
+            UserRole::GURU => 'dashboard.teacher',
+            UserRole::SISWA => 'dashboard.student',
+            UserRole::ORANG_TUA => 'dashboard.parent',
+            default => 'dashboard' // Fallback
+        };
+    @endphp
 
-        {{-- ===========================
-            DASHBOARD
-        ============================ --}}
-        <li>
-            <a href="{{ 
-                $role == 'kepala_sekolah' ? route('dashboard.kepsek') :
-                ($role == 'guru' ? route('dashboard.guru') :
-                ($role == 'siswa' ? route('dashboard.siswa') :
-                ($role == 'orang_tua' ? route('dashboard.orangtua') :
-                route('dashboard.dinas')))) 
-            }}"
-            class="flex items-center space-x-3 text-gray-700 hover:text-blue-600">
+    {{-- Navigation --}}
+    <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1 custom-scrollbar">
+        
+        {{-- DASHBOARD --}}
+        <a href="{{ route($dashboardRoute) }}" 
+           class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['dashboard.*', 'superadmin.dashboard']) }}">
+            <div class="w-5 h-5 transition-transform group-hover:scale-110">
                 @include('components.icons.dashboard')
-                <span>Dashboard</span>
-            </a>
-        </li>
+            </div>
+            <span class="font-medium">Dashboard</span>
+        </a>
 
-
-        {{-- ===========================
-            MENU DINAS
-        ============================ --}}
-        @if ($role == 'dinas')
-            <li>
-                <a href="{{ route('dashboard.dinas') }}" class="flex items-center gap-3">
-                    @include('components.icons.dashboard-dinas')
-                    <span>Dashboard Dinas</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="{{ route('superadmin.dashboard') }}" class="sidebar-item">
+        {{-- ROLE SPECIFIC MENUS --}}
+        
+        {{-- MENU DINAS --}}
+        @if ($role === UserRole::DINAS)
+            <div class="mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider px-3">
+                Administrasi
+            </div>
+            <a href="{{ route('superadmin.dashboard') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('superadmin.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
                     @include('components.icons.dashboard')
-                    <span>Superadmin</span>
-                </a>
-            </li>
-        @endif
-
-
-        {{-- ===========================
-            MENU KEPALA SEKOLAH
-        ============================ --}}
-        @if ($role == 'kepala_sekolah')
-            <li>
-                <a href="{{ route('dashboard.kepsek') }}" class="sidebar-item">
-                    @include('components.icons.laporan')
-                    <span>Laporan Nilai</span>
-                </a>
-            </li>
-        @endif
-
-
-        {{-- ===========================
-            MENU GURU
-        ============================ --}}
-        @if ($role == 'guru')
-            <li>
-                <a href="{{ route('nilai.index') }}" class="sidebar-item">
-                    @include('components.icons.nilai')
-                    <span>Input Nilai</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="{{ route('jadwal.index') }}" class="sidebar-item">
-                    @include('components.icons.jadwal')
-                    <span>Kelola Jadwal</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="{{ route('tugas.index') }}" class="sidebar-item">
-                    @include('components.icons.file-upload')
-                    <span>Tugas</span>
-                </a>
-            </li>
-        @endif
-
-
-        {{-- ===========================
-            MENU SISWA
-        ============================ --}}
-        @if ($role == 'siswa')
-            <li>
-                <a href="{{ route('nilai.siswa') }}" class="sidebar-item">
-                    @include('components.icons.nilai')
-                    <span>Nilai Saya</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="{{ route('jadwal.index ') }}" class="sidebar-item">
-                    @include('components.icons.jadwal')
-                    <span>Jadwal Pelajaran</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="{{ route('tugas.index') }}" class="sidebar-item">
-                    @include('components.icons.file-upload')
-                    <span>Tugas</span>
-                </a>
-            </li>
-        @endif
-
-
-        {{-- ===========================
-            MENU ORANG TUA
-        ============================ --}}
-        @if ($role == 'orang_tua')
-            <li>
-                <a href="{{ route('parent.dashboard') }}" class="sidebar-item">
-                    @include('components.icons.profil')
-                    <span>Monitoring Anak</span>
-                </a>
-            </li>
-        @endif
-
-
-        {{-- ===========================
-            MENU CHAT
-        ============================ --}}
-        <li>
-            <a href="{{ route('chat.index') }}" class="sidebar-item">
-                @include('components.icons.pesan')
-                <span>Pesan</span>
+                </div>
+                <span class="font-medium">Superadmin</span>
             </a>
-        </li>
+
+            <div class="mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider px-3">
+                e-Laporan
+            </div>
+            
+            <a href="{{ route('dinas.reports.incoming') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['dinas.reports.incoming', 'dinas.reports.show']) }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    @include('components.icons.laporan')
+                </div>
+                <span class="font-medium">Laporan Masuk</span>
+            </a>
+
+            <a href="{{ route('dinas.reports.archive') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('dinas.reports.archive') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                </div>
+                <span class="font-medium">Arsip Laporan</span>
+            </a>
+        @endif
+
+        {{-- MENU ADMIN DINAS --}}
+        @if ($role === UserRole::ADMIN_DINAS)
+            <div class="mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider px-3">
+                Manajemen Sekolah
+            </div>
+            
+            <a href="{{ route('dinas.schools.pending') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['dinas.schools.pending']) }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <span class="font-medium">Verifikasi Sekolah</span>
+            </a>
+
+            <a href="{{ route('dinas.schools.active') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['dinas.schools.active']) }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                </div>
+                <span class="font-medium">Data Sekolah</span>
+            </a>
+        @endif
+        
+        {{-- MENU KEPALA SEKOLAH --}}
+        @if ($role === UserRole::KEPALA_SEKOLAH)
+            <div class="mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider px-3">
+                Akademik
+            </div>
+            <a href="{{ route('dashboard.kepsek') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('dashboard.kepsek') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    @include('components.icons.laporan')
+                </div>
+                <span class="font-medium">Laporan Nilai</span>
+            </a>
+
+            <a href="{{ route('academic.calendar.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('academic.calendar.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <span class="font-medium">Kalender Akademik</span>
+            </a>
+
+            <a href="{{ route('academic.schedule.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('academic.schedule.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                   @include('components.icons.jadwal')
+                </div>
+                <span class="font-medium">Monitoring Jadwal</span>
+            </a>
+        @endif
 
 
-        {{-- ===========================
-            LOGOUT (POST + CSRF) — FIXED
-        ============================ --}}
-        <li class="pt-10">
-            <form action="{{ route('logout') }}" method="POST">
-                @csrf
-                <button type="submit"
-                    class="flex items-center space-x-3 text-red-600 hover:text-red-800 w-full text-left">
-                    @include('components.icons.logout')
-                    <span>Logout</span>
-                </button>
-            </form>
-        </li>
 
-    </ul>
+        {{-- MENU ADMIN SEKOLAH --}}
+        @if ($role === UserRole::ADMIN_SEKOLAH)
+            <div class="mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider px-3">
+                Akademik & Kurikulum
+            </div>
+
+            <a href="{{ route('academic.calendar.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('academic.calendar.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <span class="font-medium">Kalender Akademik</span>
+            </a>
+
+            <a href="{{ route('academic.schedule.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('academic.schedule.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    @include('components.icons.jadwal')
+                </div>
+                <span class="font-medium">Manajemen Jadwal</span>
+            </a>
+
+            <div class="mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider px-3">
+                Data Master
+            </div>
+            
+            <a href="{{ route('master.academic-years.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('master.academic-years.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <span class="font-medium">Tahun Ajaran</span>
+            </a>
+
+            <a href="{{ route('master.subjects.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('master.subjects.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                </div>
+                <span class="font-medium">Mata Pelajaran</span>
+            </a>
+
+            <a href="{{ route('master.courses.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('master.courses.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                </div>
+                <span class="font-medium">Pengajaran</span>
+            </a>
+
+            <a href="{{ route('master.classrooms.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('master.classrooms.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                </div>
+                <span class="font-medium">Data Kelas</span>
+            </a>
+
+            <a href="{{ route('master.teachers.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('master.teachers.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </div>
+                <span class="font-medium">Data Guru</span>
+            </a>
+
+            <a href="{{ route('master.students.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('master.students.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                </div>
+                <span class="font-medium">Data Siswa</span>
+            </a>
+        @endif
+        
+        {{-- MENU GURU --}}
+        @if ($role === UserRole::GURU)
+            <div class="mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider px-3">
+                Pengajaran
+            </div>
+            
+            <a href="{{ route('academic.calendar.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('academic.calendar.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <span class="font-medium">Kalender Akademik</span>
+            </a>
+
+            <a href="{{ route('academic.schedule.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['academic.schedule.*', 'jadwal.*']) }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    @include('components.icons.jadwal')
+                </div>
+                <span class="font-medium">Jadwal Mengajar</span>
+            </a>
+
+            <a href="{{ route('tugas.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['tugas.*', 'assignments.*']) }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    @include('components.icons.file-upload')
+                </div>
+                <span class="font-medium">Tugas & Materi</span>
+            </a>
+
+            <a href="{{ route('nilai.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['nilai.*', 'scores.*']) }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    @include('components.icons.nilai')
+                </div>
+                <span class="font-medium">Input Nilai</span>
+            </a>
+        @endif
+
+        {{-- MENU SISWA --}}
+        @if ($role === UserRole::SISWA)
+            <div class="mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider px-3">
+                Pembelajaran
+            </div>
+
+            <a href="{{ route('academic.calendar.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('academic.calendar.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                </div>
+                <span class="font-medium">Kalender Akademik</span>
+            </a>
+
+            <a href="{{ route('academic.schedule.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['academic.schedule.*', 'jadwal.*']) }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    @include('components.icons.jadwal')
+                </div>
+                <span class="font-medium">Jadwal Pelajaran</span>
+            </a>
+
+            <a href="{{ route('tugas.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['tugas.*', 'assignments.*']) }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    @include('components.icons.file-upload')
+                </div>
+                <span class="font-medium">Tugas Saya</span>
+            </a>
+
+            <a href="{{ route('nilai.siswa') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('nilai.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    @include('components.icons.nilai')
+                </div>
+                <span class="font-medium">Nilai & Rapor</span>
+            </a>
+        @endif
+
+        {{-- MENU ORANG TUA --}}
+        @if ($role === UserRole::ORANG_TUA)
+            <div class="mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider px-3">
+                Monitoring
+            </div>
+            <a href="{{ route('parent.dashboard') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('parent.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    @include('components.icons.profil')
+                </div>
+                <span class="font-medium">Monitoring Anak</span>
+            </a>
+        @endif
+
+        {{-- MENU UMUM (MESSAGES) --}}
+        {{--
+        <div class="mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider px-3">
+            Komunikasi
+        </div>
+        <a href="{{ route('chat.index') }}" 
+           class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('chat.*') }}">
+            <div class="w-5 h-5 transition-transform group-hover:scale-110">
+               @include('components.icons.pesan')
+            </div>
+            <span class="font-medium">Pesan</span>
+        </a>
+        --}}
+    </nav>
+
+    {{-- Footer / User Profile & Logout --}}
+    <div class="border-t border-slate-800 p-4 bg-slate-900/50">
+        <div class="flex items-center gap-3 mb-3 px-2">
+            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white uppercase">
+                {{ substr(Auth::user()->name ?? 'U', 0, 2) }}
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-white truncate">
+                    {{ Auth::user()->name }}
+                </p>
+                <p class="text-xs text-slate-500 truncate capitalize">
+                   {{-- Using label() method from Enum --}}
+                   {{ $role->label() }}
+                </p>
+            </div>
+        </div>
+
+        <form action="{{ route('logout') }}" method="POST">
+            @csrf
+            <button type="submit"
+                class="flex items-center justify-center space-x-2 w-full px-4 py-2 text-sm font-medium text-red-400 bg-red-400/10 hover:bg-red-400/20 rounded-lg transition-colors duration-200">
+                @include('components.icons.logout')
+                <span>Logout</span>
+            </button>
+        </form>
+    </div>
 </div>
+
+<style>
+/* Custom scrollbar for better aesthetics */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+</style>

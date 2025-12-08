@@ -11,12 +11,11 @@ class RoleMiddleware
     public function handle(Request $request, Closure $next, ...$roles)
     {
         if (!Auth::check()) {
-            return redirect('/login/siswa')->withErrors(['message' => 'Silakan login terlebih dahulu.']);
+            return redirect('/login')->withErrors(['message' => 'Silakan login terlebih dahulu.']);
         }
 
         $user = Auth::user();
-
-        if (!in_array($user->role, $roles)) {
+        if (!in_array($user->role->value, $roles)) {
             return abort(403, 'Akses ditolak.');
         }
 

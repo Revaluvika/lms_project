@@ -22,12 +22,12 @@ class MessageController extends Controller
 
         // Ambil semua percakapan
         $messages = Message::where(function ($q) use ($id) {
-                $q->where('pengirim_id', Auth::id())
-                  ->where('penerima_id', $id);
-            })
+            $q->where('pengirim_id', Auth::id())
+                ->where('penerima_id', $id);
+        })
             ->orWhere(function ($q) use ($id) {
                 $q->where('pengirim_id', $id)
-                  ->where('penerima_id', Auth::id());
+                    ->where('penerima_id', Auth::id());
             })
             ->orderBy('created_at')
             ->get();
