@@ -57,13 +57,13 @@ Route::post('/register-school', [SchoolRegistrationController::class, 'store'])
 Route::middleware(['guest'])->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
-    
+
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->name('register.submit');
 });
 
 Route::middleware(['auth'])->group(function () {
-    Route::post('/logout', [AuthController::class,'logout'])->name('logout');
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
 // =====================================================================
@@ -76,7 +76,7 @@ Route::middleware(['auth', 'verified'])->get('/dashboard', [DashboardController:
 // =====================================================================
 Route::middleware(['auth', 'verified', 'role:dinas'])->group(function () {
     Route::get('/dashboard/dinas', [DinasController::class, 'index'])->name('dashboard.dinas');
-    
+
     // School Reports Management
     Route::get('/dinas/reports', [DinasReportController::class, 'incoming'])->name('dinas.reports.incoming');
     Route::get('/dinas/reports/archive', [DinasReportController::class, 'archive'])->name('dinas.reports.archive');
@@ -85,12 +85,12 @@ Route::middleware(['auth', 'verified', 'role:dinas'])->group(function () {
 });
 Route::middleware(['auth', 'verified', 'role:admin_dinas'])->group(function () {
     Route::get('/dashboard/dinas-admin', [DinasAdminController::class, 'index'])->name('dashboard.dinas.admin');
-    
+
     // School Management
     Route::get('/dinas/schools/pending', [DinasSchoolController::class, 'pending'])->name('dinas.schools.pending');
     Route::post('/dinas/schools/{id}/approve', [DinasSchoolController::class, 'approve'])->name('dinas.schools.approve');
     Route::post('/dinas/schools/{id}/reject', [DinasSchoolController::class, 'reject'])->name('dinas.schools.reject');
-    
+
     Route::get('/dinas/schools/active', [DinasSchoolController::class, 'active'])->name('dinas.schools.active');
     Route::post('/dinas/schools/{id}/suspend', [DinasSchoolController::class, 'suspend'])->name('dinas.schools.suspend');
     Route::post('/dinas/schools/{id}/activate', [DinasSchoolController::class, 'activate'])->name('dinas.schools.activate');
@@ -101,13 +101,13 @@ Route::middleware(['auth', 'verified', 'role:admin_sekolah'])->get('/dashboard/s
 Route::middleware(['auth', 'verified', 'role:guru'])->group(function () {
     Route::get('/dashboard/teacher', [DashboardTeacherController::class, 'index'])->name('dashboard.teacher');
     Route::get('/teacher/courses', [DashboardTeacherController::class, 'myCourses'])->name('teacher.courses.index');
-    
+
     // Course Details & management
     Route::get('/teacher/courses/{id}', [DashboardTeacherController::class, 'show'])->name('teacher.courses.show');
     Route::post('/teacher/courses/{id}/materials', [DashboardTeacherController::class, 'storeMaterial'])->name('teacher.courses.materials.store');
     Route::put('/teacher/materials/{id}', [DashboardTeacherController::class, 'updateMaterial'])->name('teacher.materials.update'); // Added Update Route
     Route::delete('/teacher/materials/{id}', [DashboardTeacherController::class, 'destroyMaterial'])->name('teacher.materials.destroy');
-    
+
     Route::post('/teacher/courses/{id}/assignments', [DashboardTeacherController::class, 'storeAssignment'])->name('teacher.courses.assignments.store');
     Route::put('/teacher/assignments/{id}', [DashboardTeacherController::class, 'updateAssignment'])->name('teacher.assignments.update'); // Added Update Route
     Route::get('/teacher/assignments/{id}', [DashboardTeacherController::class, 'showAssignment'])->name('teacher.assignments.show');
@@ -121,7 +121,7 @@ Route::middleware(['auth', 'verified', 'role:guru'])->group(function () {
     Route::get('/teacher/exams/{id}/edit', [DashboardTeacherExamController::class, 'edit'])->name('teacher.exams.edit');
     Route::put('/teacher/exams/{id}', [DashboardTeacherExamController::class, 'update'])->name('teacher.exams.update');
     Route::delete('/teacher/exams/{id}', [DashboardTeacherExamController::class, 'destroy'])->name('teacher.exams.destroy');
-    
+
     Route::get('/teacher/exams/{id}/questions', [DashboardTeacherExamController::class, 'questions'])->name('teacher.exams.questions');
     Route::post('/teacher/exams/{id}/questions', [DashboardTeacherExamController::class, 'storeQuestion'])->name('teacher.exams.questions.store');
     Route::delete('/teacher/questions/{id}', [DashboardTeacherExamController::class, 'destroyQuestion'])->name('teacher.exams.questions.destroy');
@@ -134,13 +134,35 @@ Route::middleware(['auth', 'verified', 'role:guru'])->group(function () {
     // Gradebook
     Route::get('/teacher/courses/{courseId}/gradebook', [\App\Http\Controllers\Dashboard\GradebookController::class, 'index'])->name('teacher.gradebook.index');
     Route::post('/teacher/courses/{courseId}/gradebook', [\App\Http\Controllers\Dashboard\GradebookController::class, 'store'])->name('teacher.gradebook.store');
+
+    // =================================================================
+    // WALI KELAS / HOMEROOM ROUTES
+    // =================================================================
+    Route::prefix('homeroom')->name('homeroom.')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\Dashboard\HomeroomController::class, 'index'])->name('dashboard');
+        Route::get('/students', [\App\Http\Controllers\Dashboard\HomeroomController::class, 'students'])->name('students.index');
+        Route::get('/students/{id}', [\App\Http\Controllers\Dashboard\HomeroomController::class, 'showStudent'])->name('students.show');
+
+        // Promotion
+        Route::get('/promotion', [\App\Http\Controllers\Dashboard\HomeroomController::class, 'promotion'])->name('promotion.index');
+        Route::post('/promotion', [\App\Http\Controllers\Dashboard\HomeroomController::class, 'storePromotion'])->name('promotion.store');
+
+        // Leger
+        Route::get('/leger', [\App\Http\Controllers\Dashboard\HomeroomLegerController::class, 'index'])->name('leger.index');
+
+        // Report Cards
+        Route::get('/report', [\App\Http\Controllers\Dashboard\HomeroomReportController::class, 'index'])->name('report.index');
+        Route::get('/report/{id}/edit', [\App\Http\Controllers\Dashboard\HomeroomReportController::class, 'edit'])->name('report.edit');
+        Route::put('/report/{id}', [\App\Http\Controllers\Dashboard\HomeroomReportController::class, 'update'])->name('report.update');
+        Route::get('/report/{id}/print', [\App\Http\Controllers\Dashboard\HomeroomReportController::class, 'print'])->name('report.print');
+    });
 });
-Route::middleware(['auth', 'verified', 'role:siswa'])->group(function() {
+Route::middleware(['auth', 'verified', 'role:siswa'])->group(function () {
     Route::get('/dashboard/student', [DashboardStudentController::class, 'index'])->name('dashboard.student');
     Route::get('/student/courses', [DashboardStudentController::class, 'courses'])->name('student.courses.index');
     Route::get('/student/courses/{id}', [DashboardStudentController::class, 'show'])->name('student.courses.show');
     Route::post('/student/materials/{id}/complete', [DashboardStudentController::class, 'markMaterialComplete'])->name('student.materials.complete');
-    
+
     Route::get('/student/schedule', [DashboardStudentController::class, 'schedule'])->name('student.schedule.index');
     Route::get('/student/assignments', [DashboardStudentController::class, 'assignments'])->name('student.assignments.index');
     Route::get('/student/assignments/{id}', [DashboardStudentController::class, 'showAssignment'])->name('student.assignments.show');
@@ -260,8 +282,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Route::get('/rapor/siswa/{id}', [ReportCardController::class, 'show'])->name('rapor.siswa');
 });
 Route::get('/rapor/pdf/{id}', [RaporPdfController::class, 'generate'])
-     ->middleware('auth')
-     ->name('rapor.pdf');
+    ->middleware('auth')
+    ->name('rapor.pdf');
 
 // =====================================================================
 // FILE: Tugas & Pengumpulan
@@ -301,7 +323,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 // =====================================================================
 // PARENT MODE & SUPERADMIN
 // =====================================================================
-Route::middleware(['auth', 'verified'])->get('/parent/dashboard', [ParentController::class, 'dashboard'])->name('parent.dashboard');
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/parent/dashboard', [ParentController::class, 'dashboard'])->name('parent.dashboard');
+    Route::post('/parent/switch-child/{id}', [ParentController::class, 'switchChild'])->name('parent.switch-child');
+
+    // Detailed Views
+    Route::get('/parent/attendance', [ParentController::class, 'attendance'])->name('parent.attendance');
+    Route::get('/parent/grades', [ParentController::class, 'grades'])->name('parent.grades');
+    Route::get('/parent/schedule', [ParentController::class, 'schedule'])->name('parent.schedule');
+});
 Route::middleware(['auth', 'verified'])->get('/superadmin/dashboard', [SuperadminController::class, 'index'])->name('superadmin.dashboard');
 
 // =====================================================================
@@ -328,8 +358,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // API untuk badge jumlah pesan belum dibaca
     Route::get('/chat-count', function () {
         $count = \App\Models\Message::where('receiver_id', Auth::id())
-                    ->where('is_read', false)
-                    ->count();
+            ->where('is_read', false)
+            ->count();
 
         return response()->json(['count' => $count]);
     })->name('chat.count');
@@ -361,8 +391,8 @@ Route::middleware('auth')->group(function () {
 Route::get('/notif/count', function () {
     return response()->json([
         'count' => \App\Models\Notification::where('user_id', Auth::id())
-                    ->where('is_read', false)
-                    ->count()
+            ->where('is_read', false)
+            ->count()
     ]);
 })->name('notif.count');
 
@@ -386,7 +416,7 @@ Route::get('/email/verify', function () {
 
 Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
     $request->fulfill();
-    
+
     return redirect('/dashboard')->with('success', 'Email berhasil diverifikasi!');
 })->middleware(['auth', 'signed'])->name('verification.verify');
 

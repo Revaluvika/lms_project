@@ -102,6 +102,34 @@ Extended profile for teacher users.
 | specialization | string | Main subject expertise |
 | timestamps | timestamp | |
 
+#### Parents (`parents`)
+
+Extended profile for parent users.
+| Column | Type | Description |
+|--------|------|-------------|
+| id | bigInteger | Primary Key |
+| user_id | foreignId | FK to `users` |
+| nik | string | National ID Number |
+| kk_number | string | Family Card Number |
+| occupation | string | Job/Profession |
+| monthly_income | string | Income Range |
+| education_level | string | Highest Education |
+| phone_alternate | string | Alternative Contact |
+| address_domicile | text | Residential Address |
+| timestamps | timestamp | |
+
+#### Parent Student (`parent_student`)
+
+Pivot table linking `parents` and `students`.
+| Column | Type | Description |
+|--------|------|-------------|
+| id | bigInteger | Primary Key |
+| parent_id | foreignId | FK to `parents` |
+| student_id | foreignId | FK to `students` |
+| relation_type | string | e.g. "Ayah", "Ibu", "Wali" |
+| is_guardian | boolean | Is the legal guardian |
+| timestamps | timestamp | |
+
 ### Learning Management (Courses)
 
 #### Courses (`courses`)
@@ -127,7 +155,7 @@ Weekly schedule entries for courses.
 | id | bigInteger | Primary Key |
 | school_id | foreignId | FK to `schools` |
 | course_id | foreignId | FK to `courses` |
-| day_of_week | enum | mon-sun |
+| day_of_week | enum | monday-sunday |
 | start_time | time | |
 | end_time | time | |
 | timestamps | timestamp | |
@@ -317,6 +345,34 @@ Finalized grades for a student in a specific subject and academic year.
 | file_path        | string     |                                       |
 | timestamps       | timestamp  |                                       |
 
+#### Student Term Records (`student_term_records`)
+
+For Homeroom Teacher reports (Rapor Wali Kelas), storing non-subject data.
+
+| Column           | Type       | Description                                                             |
+| ---------------- | ---------- | ----------------------------------------------------------------------- |
+| id               | bigInteger | Primary Key                                                             |
+| student_id       | foreignId  | FK to `students`                                                        |
+| academic_year_id | foreignId  | FK to `academic_years`                                                  |
+| classroom_id     | foreignId  | FK to `classrooms`                                                      |
+| sick_count       | integer    | Attendance (Sakit)                                                      |
+| permission_count | integer    | Attendance (Izin)                                                       |
+| absentee_count   | integer    | Attendance (Alpha)                                                      |
+| notes            | text       | Catatan Wali Kelas                                                      |
+| promotion_status | enum       | `promoted`, `retained`, `graduated`, `continuing`. Default `continuing` |
+| timestamps       | timestamp  |                                                                         |
+
+#### Extracurricular Records (`extracurricular_records`)
+
+| Column                 | Type       | Description                  |
+| ---------------------- | ---------- | ---------------------------- |
+| id                     | bigInteger | Primary Key                  |
+| student_term_record_id | foreignId  | FK to `student_term_records` |
+| activity_name          | string     | e.g. "Pramuka", "Basket"     |
+| grade                  | string     | e.g. "A", "Baik"             |
+| description            | text       |                              |
+| timestamps             | timestamp  |                              |
+
 ---
 
 ## Relationship Diagram (Simplified)
@@ -326,6 +382,7 @@ erDiagram
     Users ||--o| Schools : belongs_to
     Users ||--o| Students : has_profile
     Users ||--o| Teachers : has_profile
+    Users ||--o| Parents : has_profile
     Schools ||--|{ AcademicYears : has
     Schools ||--|{ Classrooms : has
     Schools ||--|{ Subjects : has
@@ -336,6 +393,8 @@ erDiagram
 
     Classrooms ||--o{ Students : contains
     Classrooms ||--o| Teachers : has_homeroom
+
+    Parents }|--|{ Students : guardians_of
 
     Courses }|--|| Classrooms : in
     Courses }|--|| Subjects : covers

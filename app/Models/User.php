@@ -6,11 +6,12 @@ use App\Enums\UserRole;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'name',
@@ -38,7 +39,13 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function orangTua()
     {
-        return $this->belongsTo(User::class, 'school_id');
+        // Legacy or unused? Keeping for safety if used elsewhere, potentially deprecated.
+        return $this->belongsTo(User::class, 'school_id'); // suspicious relation
+    }
+
+    public function studentParent()
+    {
+        return $this->hasOne(StudentParent::class);
     }
 
     public function school()

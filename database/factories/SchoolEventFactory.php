@@ -22,7 +22,7 @@ class SchoolEventFactory extends Factory
             'school_id' => School::factory(),
             'title' => $this->faker->sentence(3),
             'start_date' => $startDate,
-            'end_date' => $this->faker->dateTimeBetween($startDate, '+2 days'),
+            'end_date' => (clone $startDate)->modify('+' . rand(1, 3) . ' days'),
             'type' => $this->faker->randomElement(['event', 'meeting', 'holiday', 'other']),
             'is_holiday' => $this->faker->boolean(20),
         ];

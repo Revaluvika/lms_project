@@ -97,6 +97,27 @@
         <form action="{{ route('teacher.exams.questions.store', $exam->id) }}" method="POST">
             @csrf
             
+            <!-- Error Alert -->
+            @if($errors->any())
+                <div class="mb-4 bg-red-50 border-l-4 border-red-500 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-700 font-medium">Gagal menyimpan soal:</p>
+                            <ul class="mt-1 list-disc list-inside text-sm text-red-600">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Tipe Soal</label>
                 <select name="question_type" x-model="type" class="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm px-4 py-2 border">
@@ -109,12 +130,12 @@
 
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Pertanyaan</label>
-                <textarea name="question_text" rows="3" required class="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm px-4 py-2 border" placeholder="Tuliskan pertanyaan..."></textarea>
+                <textarea name="question_text" rows="3" required class="w-full rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm px-4 py-2 border" placeholder="Tuliskan pertanyaan...">{{ old('question_text') }}</textarea>
             </div>
             
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Poin</label>
-                <input type="number" name="points" value="5" min="1" required class="w-24 rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm px-4 py-2 border">
+                <input type="number" name="points" value="{{ old('points', 5) }}" min="1" required class="w-24 rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm px-4 py-2 border">
             </div>
 
             <!-- Multiple Choice Options -->
@@ -123,9 +144,12 @@
                 <template x-for="(option, index) in options" :key="index">
                     <div class="flex gap-2 items-center">
                         <span class="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded font-bold text-gray-500" x-text="option.key"></span>
-                        <input type="text" :name="'options[' + option.key + ']'" required class="flex-1 rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm px-3 py-2 border text-sm" placeholder="Isi jawaban...">
+                        
+                        <!-- Using :required to treat hidden fields as optional during submission if hidden -->
+                        <input type="text" :name="'options[' + option.key + ']'" :required="type === 'multiple_choice'" class="flex-1 rounded-lg border-gray-300 focus:ring-blue-500 focus:border-blue-500 shadow-sm px-3 py-2 border text-sm" placeholder="Isi jawaban...">
+                        
                         <label class="flex items-center gap-1 cursor-pointer">
-                            <input type="radio" name="correct_answer" :value="option.key" required class="text-blue-600 focus:ring-blue-500">
+                            <input type="radio" name="correct_answer" :value="option.key" :required="type === 'multiple_choice'" class="text-blue-600 focus:ring-blue-500">
                             <span class="text-xs text-gray-500">Benar</span>
                         </label>
                     </div>
@@ -137,11 +161,11 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Kunci Jawaban</label>
                 <div class="flex gap-4">
                     <label class="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded border border-gray-200">
-                        <input type="radio" name="correct_answer" value="True" x-bind:required="type === 'true_false'" class="text-blue-600 focus:ring-blue-500">
+                        <input type="radio" name="correct_answer" value="True" :required="type === 'true_false'" class="text-blue-600 focus:ring-blue-500">
                         <span class="font-bold text-green-600">True (Benar)</span>
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer bg-white px-4 py-2 rounded border border-gray-200">
-                        <input type="radio" name="correct_answer" value="False" x-bind:required="type === 'true_false'" class="text-blue-600 focus:ring-blue-500">
+                        <input type="radio" name="correct_answer" value="False" :required="type === 'true_false'" class="text-blue-600 focus:ring-blue-500">
                         <span class="font-bold text-red-600">False (Salah)</span>
                     </label>
                 </div>

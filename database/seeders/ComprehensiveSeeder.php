@@ -52,9 +52,9 @@ class ComprehensiveSeeder extends Seeder
                 ['period_number' => null, 'label' => 'Istirahat', 'start_time' => '08:30:00', 'end_time' => '08:45:00'],
                 ['period_number' => 3, 'start_time' => '08:45:00', 'end_time' => '09:30:00'],
             )->create([
-                'school_id' => $school->id,
-                'day_of_week' => $day,
-            ]);
+                        'school_id' => $school->id,
+                        'day_of_week' => $day,
+                    ]);
         }
 
         // 3. Create Academic Year
@@ -63,8 +63,16 @@ class ComprehensiveSeeder extends Seeder
             'is_active' => true,
         ]);
 
+        // 3.1 Create Grade Weights
+        \App\Models\GradeWeights::create(['school_id' => $school->id, 'category' => 'daily', 'weight' => 2]);
+        \App\Models\GradeWeights::create(['school_id' => $school->id, 'category' => 'mid_term', 'weight' => 1]);
+        \App\Models\GradeWeights::create(['school_id' => $school->id, 'category' => 'final_term', 'weight' => 1]);
+
+        // 3.2 Create School Events
+        \App\Models\SchoolEvent::factory()->count(3)->create(['school_id' => $school->id]);
+
         // 4. Create Users (Kepsek, Admin Sekolah, Dinas, Admin Dinas)
-        
+
         // Kepsek
         User::factory()->create([
             'name' => 'Kepala Sekolah Seed',
@@ -103,7 +111,7 @@ class ComprehensiveSeeder extends Seeder
 
         // 5. Create Teachers & Subjects
         $subjects = Subject::factory()->count(5)->create(['school_id' => $school->id]);
-        
+
         $teachers = collect();
         foreach ($subjects as $subject) {
             $teacherUser = User::factory()->create([
@@ -113,7 +121,7 @@ class ComprehensiveSeeder extends Seeder
                 'role' => UserRole::GURU,
                 'school_id' => $school->id,
             ]);
-            
+
             $teacher = Teacher::factory()->create([
                 'user_id' => $teacherUser->id,
                 'school_id' => $school->id,
@@ -140,10 +148,18 @@ class ComprehensiveSeeder extends Seeder
                 // Update email to be predictable for testing
                 $sUser->update(['email' => "siswa{$classroom->id}.{$key}@seed.test"]);
 
-                Student::factory()->create([
+                $student = Student::factory()->create([
                     'user_id' => $sUser->id,
                     'school_id' => $school->id,
                     'classroom_id' => $classroom->id,
+                ]);
+
+                // Create Term Record
+                \App\Models\StudentTermRecord::create([
+                    'student_id' => $student->id,
+                    'academic_year_id' => $academicYear->id,
+                    'classroom_id' => $classroom->id,
+                    'promotion_status' => 'continuing',
                 ]);
             }
         }
@@ -152,7 +168,7 @@ class ComprehensiveSeeder extends Seeder
         foreach ($classrooms as $classroom) {
             foreach ($subjects as $index => $subject) {
                 $teacher = $teachers[$index] ?? $teachers->first();
-                
+
                 $course = Course::factory()->create([
                     'school_id' => $school->id,
                     'academic_year_id' => $academicYear->id,
@@ -181,15 +197,104 @@ class ComprehensiveSeeder extends Seeder
                 $exams = Exam::factory()->count(1)->create([
                     'course_id' => $course->id,
                 ]);
-                
+
                 foreach ($exams as $exam) {
                     ExamQuestion::factory()->count(5)->create([
                         'exam_id' => $exam->id,
+                    ]);
+
+                    // Create Exam Attempts
+                    $randomStudents = Student::where('classroom_id', $classroom->id)->inRandomOrder()->take(5)->get();
+                    foreach ($randomStudents as $rs) {
+                        $attempt = ExamAttempt::factory()->create([
+                            'exam_id' => $exam->id,
+                            'student_id' => $rs->id,
+                        ]);
+
+                        // Answers
+                        foreach ($exam->questions as $question) {
+                            ExamAnswer::factory()->create([
+                                'exam_attempt_id' => $attempt->id,
+                                'exam_question_id' => $question->id,
+                            ]);
+                        }
+                    }
+                }
+
+                // Create Submissions
+                foreach ($assignments as $assignment) {
+                    $randomStudents = Student::where('classroom_id', $classroom->id)->inRandomOrder()->take(5)->get();
+                    foreach ($randomStudents as $rs) {
+                        AssignmentSubmission::factory()->create([
+                            'assignment_id' => $assignment->id,
+                            'student_id' => $rs->id,
+                        ]);
+                    }
+                }
+
+                // Create Attendance
+                $randomStudents = Student::where('classroom_id', $classroom->id)->get();
+                foreach ($randomStudents as $rs) {
+                    Attendance::factory()->count(2)->create([
+                        'course_id' => $course->id,
+                        'student_id' => $rs->id,
+                    ]);
+
+                    // Material Completion
+                    foreach ($materials as $material) {
+                        // 70% chance completion
+                        if (rand(0, 10) > 3) {
+                            CourseMaterialCompletion::factory()->create([
+                                'student_id' => $rs->id,
+                                'course_material_id' => $material->id,
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            // Generate Report Cards for this classroom's students
+            $students = Student::where('classroom_id', $classroom->id)->get();
+            foreach ($students as $student) {
+                // For each subject, create a report card
+                foreach ($subjects as $subject) {
+                    // Find teacher for this subject in this class (via Course)
+                    $course = Course::where('classroom_id', $classroom->id)
+                        ->where('subject_id', $subject->id)
+                        ->first();
+
+                    if ($course) {
+                        \App\Models\ReportCard::factory()->create([
+                            'student_id' => $student->id,
+                            'teacher_id' => $course->teacher_id,
+                            'subject_id' => $subject->id,
+                            'academic_year_id' => $academicYear->id,
+                        ]);
+                    }
+                }
+
+                // Add Extracurriculars to the Term Record (which was created earlier)
+                $termRecord = \App\Models\StudentTermRecord::where('student_id', $student->id)
+                    ->where('academic_year_id', $academicYear->id)
+                    ->first();
+                if ($termRecord) {
+                    \App\Models\ExtracurricularRecord::factory()->count(rand(0, 2))->create([
+                        'student_term_record_id' => $termRecord->id
                     ]);
                 }
             }
         }
 
+        // Create School Reports
+        \App\Models\SchoolReport::factory()->count(5)->create([
+            'school_id' => $school->id,
+            'academic_year_id' => $academicYear->id,
+            'uploaded_by' => $school->users()->where('role', UserRole::ADMIN_SEKOLAH)->first()->id,
+        ]);
+
         $this->command->info('Comprehensive Seeding Completed!');
+
+        // 8. Create Parents
+        $this->call(ParentSeeder::class);
     }
 }

@@ -33,6 +33,16 @@
             UserRole::ORANG_TUA => 'dashboard.parent',
             default => 'dashboard' // Fallback
         };
+        // Check if teacher is Homeroom Teacher
+        $isHomeroom = false;
+        if ($role === UserRole::GURU && $activeUser->teacher) {
+             $activeYearId = \App\Models\AcademicYear::where('is_active', true)->value('id');
+             if ($activeYearId) {
+                 $isHomeroom = \App\Models\Classroom::where('teacher_id', $activeUser->teacher->id)
+                     ->where('academic_year_id', $activeYearId)
+                     ->exists();
+             }
+        }
     @endphp
 
     {{-- Navigation --}}
@@ -257,13 +267,37 @@
                 <span class="font-medium">Jadwal Mengajar</span>
             </a>
 
-            <a href="{{ route('nilai.index') }}" 
-               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['nilai.*', 'scores.*']) }}">
+
+
+            {{-- MODULE WALI KELAS --}}
+            @if(isset($isHomeroom) && $isHomeroom)
+            <div class="mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider px-3">
+                Wali Kelas
+            </div>
+            <a href="{{ route('homeroom.students.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('homeroom.students.*') }}">
                 <div class="w-5 h-5 transition-transform group-hover:scale-110">
-                    @include('components.icons.nilai')
+                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                 </div>
-                <span class="font-medium">Input Nilai</span>
+                <span class="font-medium">Anggota Kelas</span>
             </a>
+            
+            <a href="{{ route('homeroom.leger.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('homeroom.leger.*') }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                </div>
+                <span class="font-medium">Leger Nilai</span>
+            </a>
+
+            <a href="{{ route('homeroom.report.index') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['homeroom.report.*']) }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                </div>
+                <span class="font-medium">Manajemen Rapor</span>
+            </a>
+            @endif
         @endif
 
         {{-- MENU SISWA --}}
@@ -326,12 +360,28 @@
             <div class="mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider px-3">
                 Monitoring
             </div>
-            <a href="{{ route('parent.dashboard') }}" 
-               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('parent.*') }}">
+            <a href="{{ route('parent.attendance') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['parent.attendance']) }}">
                 <div class="w-5 h-5 transition-transform group-hover:scale-110">
-                    @include('components.icons.profil')
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                 </div>
-                <span class="font-medium">Monitoring Anak</span>
+                <span class="font-medium">Kehadiran</span>
+            </a>
+
+            <a href="{{ route('parent.schedule') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['parent.schedule']) }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    @include('components.icons.jadwal')
+                </div>
+                <span class="font-medium">Jadwal Pelajaran</span>
+            </a>
+
+            <a href="{{ route('parent.grades') }}" 
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['parent.grades']) }}">
+                <div class="w-5 h-5 transition-transform group-hover:scale-110">
+                    @include('components.icons.nilai')
+                </div>
+                <span class="font-medium">Nilai & Rapor</span>
             </a>
         @endif
 
