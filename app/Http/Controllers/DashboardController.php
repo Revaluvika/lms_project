@@ -20,10 +20,11 @@ class DashboardController extends Controller
             UserRole::ADMIN_SEKOLAH => redirect()->route('dashboard.school.admin'),
             UserRole::GURU => redirect()->route('dashboard.teacher'),
             UserRole::SISWA => redirect()->route('dashboard.student'),
+            UserRole::ORANG_TUA => redirect()->route('dashboard.parent'),
             default => abort(403, 'Unauthorized action.'),
         };
     }
-    
+
     // public function index()
     // {
     //     $totalGuru = User::where('role', 'guru')->count();

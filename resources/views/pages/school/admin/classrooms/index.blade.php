@@ -95,7 +95,7 @@
 </div>
 
 <!-- Create Modal -->
-<x-modal name="create-modal" :show="false" focusable>
+<x-modal name="create-modal" :show="$errors->has('name') || $errors->has('grade_level') || $errors->has('teacher_id')" focusable>
     <div class="p-6">
         <div class="flex justify-between items-center mb-4">
             <h3 class="font-bold text-lg text-gray-800">Tambah Kelas</h3>
@@ -103,22 +103,43 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
+
+        @if($errors->any())
+            <div class="mb-4 bg-red-50 border-l-4 border-red-500 p-4">
+                <div class="flex">
+                    <div class="shrink-0">
+                        <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-red-700 font-medium">Terdapat kesalahan:</p>
+                        <ul class="mt-1 list-disc list-inside text-sm text-red-600">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <form action="{{ route('master.classrooms.store') }}" method="POST" class="space-y-4">
             @csrf
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Nama Kelas</label>
-                <input type="text" name="name" placeholder="Contoh: X IPA 1" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" required>
+                <input type="text" name="name" value="{{ old('name') }}" placeholder="Contoh: X IPA 1" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" required>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Tingkat</label>
-                <input type="number" name="grade_level" placeholder="Contoh: 10" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" required>
+                <input type="number" name="grade_level" value="{{ old('grade_level') }}" placeholder="Contoh: 10" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" required>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Tahun Ajaran</label>
                 <select name="academic_year_id" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" required>
-                    <option value="" disabled selected>Pilih Tahun Ajaran</option>
+                    <option value="" disabled {{ old('academic_year_id') ? '' : 'selected' }}>Pilih Tahun Ajaran</option>
                     @foreach($academicYears as $year)
-                        <option value="{{ $year->id }}">{{ $year->name }} - {{ ucfirst($year->semester) }} {{ $year->is_active ? '(Aktif)' : '' }}</option>
+                        <option value="{{ $year->id }}" {{ old('academic_year_id') == $year->id ? 'selected' : '' }}>{{ $year->name }} - {{ ucfirst($year->semester) }} {{ $year->is_active ? '(Aktif)' : '' }}</option>
                     @endforeach
                 </select>
             </div>
@@ -127,7 +148,7 @@
                 <select name="teacher_id" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
                     <option value="">-- Pilih Guru --</option>
                     @foreach($teachers as $teacher)
-                        <option value="{{ $teacher->id }}">{{ $teacher->user->name }} ({{ $teacher->nip }})</option>
+                        <option value="{{ $teacher->id }}" {{ old('teacher_id') == $teacher->id ? 'selected' : '' }}>{{ $teacher->user->name }} ({{ $teacher->nip }})</option>
                     @endforeach
                 </select>
             </div>

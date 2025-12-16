@@ -78,7 +78,22 @@
                             <button onclick="openResetPasswordModal('{{ route('master.students.reset-password', $student->id) }}')" class="p-1.5 hover:bg-yellow-50 rounded-lg text-gray-400 hover:text-yellow-600 transition-colors" title="Reset Password">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
                             </button>
-                            <button onclick="openEditModal({{ $student->id }}, '{{ $student->nama }}', '{{ $student->user->email ?? '' }}', '{{ $student->nis }}', '{{ $student->classroom_id }}', '{{ $student->telepon }}', '{{ $student->alamat }}')" class="p-1.5 hover:bg-blue-50 rounded-lg text-gray-400 hover:text-blue-600 transition-colors" title="Edit">
+                            <button 
+                                onclick="handleEditClick(this)"
+                                data-id="{{ $student->id }}"
+                                data-nama="{{ $student->nama }}"
+                                data-email="{{ $student->user->email ?? '' }}"
+                                data-nis="{{ $student->nis }}"
+                                data-classroom-id="{{ $student->classroom_id }}"
+                                data-telepon="{{ $student->telepon }}"
+                                data-alamat="{{ $student->alamat }}"
+                                data-parent-name="{{ $student->parents->first()->user->name ?? '' }}"
+                                data-parent-nik="{{ $student->parents->first()->nik ?? '' }}"
+                                data-parent-email="{{ $student->parents->first()->user->email ?? '' }}"
+                                data-parent-phone="{{ $student->parents->first()->phone_alternate ?? '' }}"
+                                data-relation-type="{{ $student->parents->first()->pivot->relation_type ?? 'Wali' }}"
+                                class="p-1.5 hover:bg-blue-50 rounded-lg text-gray-400 hover:text-blue-600 transition-colors" 
+                                title="Edit">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                             </button>
                             <button onclick="openDeleteModal('{{ route('master.students.destroy', $student->id) }}')" class="p-1.5 hover:bg-red-50 rounded-lg text-gray-400 hover:text-red-600 transition-colors" title="Hapus">
@@ -121,8 +136,8 @@
                 <div class="flex items-center justify-center w-full">
                     <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
                         <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                            <svg class="w-8 h-8 mb-2 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                            <svg class="w-8 h-8 mb-2 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                             </svg>
                             <p class="text-sm text-gray-500"><span class="font-semibold">Klik untuk upload</span> atau drag and drop</p>
                             <p class="text-xs text-gray-500">XLSX, CSV (Max. 5MB)</p>
@@ -184,6 +199,43 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
                 <textarea name="alamat" rows="2" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"></textarea>
             </div>
+
+            <!-- Parent Info Section -->
+            <div class="border-t border-gray-100 pt-4 mt-4">
+                <h4 class="font-bold text-gray-800 text-sm mb-3">Data Orang Tua (Opsional)</h4>
+                <div class="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">NIK Orang Tua</label>
+                        <input type="text" name="parent_nik" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" placeholder="Wajib untuk link akun">
+                    </div>
+                    <div>
+                         <label class="block text-sm font-medium text-gray-700 mb-1">Email Orang Tua</label>
+                        <input type="email" name="parent_email" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Orang Tua</label>
+                        <input type="text" name="parent_name" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Telepon Orang Tua</label>
+                        <input type="text" name="parent_phone" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Hubungan</label>
+                    <select name="relation_type" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                        <option value="Ayah">Ayah</option>
+                        <option value="Ibu">Ibu</option>
+                        <option value="Wali" selected>Wali</option>
+                    </select>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">
+                    * Sistem akan otomatis menghubungkan siswa jika NIK/Email orang tua sudah terdaftar.
+                </p>
+            </div>
+
             <div class="flex justify-end gap-2 pt-2">
                 <button type="button" x-on:click="$dispatch('close-modal', 'create-modal')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">Batal</button>
                 <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">Simpan</button>
@@ -235,6 +287,40 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
                 <textarea id="editAlamat" name="alamat" rows="2" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"></textarea>
             </div>
+
+            <!-- Parent Info Section (Edit) -->
+            <div class="border-t border-gray-100 pt-4 mt-4">
+                <h4 class="font-bold text-gray-800 text-sm mb-3">Data Orang Tua</h4>
+                <div class="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">NIK Orang Tua</label>
+                        <input type="text" id="editParentNik" name="parent_nik" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                    </div>
+                    <div>
+                         <label class="block text-sm font-medium text-gray-700 mb-1">Email Orang Tua</label>
+                        <input type="email" id="editParentEmail" name="parent_email" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Orang Tua</label>
+                        <input type="text" id="editParentName" name="parent_name" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Telepon Orang Tua</label>
+                        <input type="text" id="editParentPhone" name="parent_phone" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Hubungan</label>
+                    <select id="editRelationType" name="relation_type" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                        <option value="Ayah">Ayah</option>
+                        <option value="Ibu">Ibu</option>
+                        <option value="Wali">Wali</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="flex justify-end gap-2 pt-2">
                 <button type="button" x-on:click="$dispatch('close-modal', 'edit-modal')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">Batal</button>
                 <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">Simpan Perubahan</button>
@@ -334,7 +420,12 @@
 </x-modal>
 
 <script>
-    function openEditModal(id, nama, email, nis, classroomId, telepon, alamat) {
+    function handleEditClick(btn) {
+        const d = btn.dataset;
+        openEditModal(d.id, d.nama, d.email, d.nis, d.classroomId, d.telepon, d.alamat, d.parentName, d.parentNik, d.parentEmail, d.parentPhone, d.relationType);
+    }
+
+    function openEditModal(id, nama, email, nis, classroomId, telepon, alamat, parentName, parentNik, parentEmail, parentPhone, relationType) {
         document.getElementById('editForm').action = `/master/students/${id}`;
         document.getElementById('editName').value = nama;
         document.getElementById('editEmail').value = email;
@@ -342,6 +433,14 @@
         document.getElementById('editClassroomId').value = classroomId;
         document.getElementById('editTelepon').value = telepon;
         document.getElementById('editAlamat').value = alamat;
+        
+        // Parent Data
+        document.getElementById('editParentName').value = parentName || '';
+        document.getElementById('editParentNik').value = parentNik || '';
+        document.getElementById('editParentEmail').value = parentEmail || '';
+        document.getElementById('editParentPhone').value = parentPhone || '';
+        document.getElementById('editRelationType').value = relationType || 'Wali';
+
         window.dispatchEvent(new CustomEvent('open-modal', { detail: 'edit-modal' }));
     }
 

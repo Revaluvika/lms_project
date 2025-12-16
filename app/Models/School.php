@@ -65,6 +65,11 @@ class School extends Model
         return $this->hasOne(User::class)->where('role', UserRole::ADMIN_SEKOLAH);
     }
 
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
+
     protected $casts = [
         'status' => SchoolStatus::class,
     ];

@@ -45,4 +45,21 @@ class Student extends Model
     {
         return $this->hasMany(ExamAttempt::class);
     }
+
+    public function parents()
+    {
+        return $this->belongsToMany(StudentParent::class, 'parent_student', 'student_id', 'parent_id')
+            ->withPivot('relation_type', 'is_guardian')
+            ->withTimestamps();
+    }
+
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function reportCards()
+    {
+        return $this->hasMany(ReportCard::class);
+    }
 }

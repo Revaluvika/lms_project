@@ -60,6 +60,57 @@ class StudentController extends Controller
                 'telepon' => $request->telepon,
             ]);
 
+            // Handle Parent Data (Optional)
+            if ($request->filled('parent_email') || $request->filled('parent_nik')) {
+                $parentProfile = null;
+
+                // 1. Check by NIK (Primary)
+                if ($request->filled('parent_nik')) {
+                    $parentProfile = \App\Models\StudentParent::where('nik', $request->parent_nik)->first();
+                }
+
+                // 2. Check by Email (Secondary)
+                if (!$parentProfile && $request->filled('parent_email')) {
+                    $parentUser = User::where('email', $request->parent_email)->first();
+                    if ($parentUser) {
+                        $parentProfile = $parentUser->studentParent ?? \App\Models\StudentParent::create([
+                            'user_id' => $parentUser->id,
+                            'nik' => $request->parent_nik,
+                            'phone_alternate' => $request->parent_phone
+                        ]);
+                    }
+                }
+
+                // 3. Create New Parent
+                if (!$parentProfile && $request->filled('parent_email')) { // Email required for new user
+                    // Validate email uniqueness manually since we checked logic above
+                    $parentUser = User::create([
+                        'name' => $request->parent_name ?? 'Orang Tua',
+                        'email' => $request->parent_email,
+                        'password' => Hash::make('password'),
+                        'role' => UserRole::ORANG_TUA,
+                        'phone_number' => $request->parent_phone,
+                    ]);
+
+                    $parentProfile = \App\Models\StudentParent::create([
+                        'user_id' => $parentUser->id,
+                        'nik' => $request->parent_nik,
+                        'phone_alternate' => $request->parent_phone,
+                    ]);
+                }
+
+                // Link Student
+                if ($parentProfile) {
+                    $student = Student::where('user_id', $user->id)->first(); // Retrieve created student
+                    $parentProfile->students()->syncWithoutDetaching([
+                        $student->id => [
+                            'relation_type' => $request->relation_type ?? 'Wali',
+                            'is_guardian' => true
+                        ]
+                    ]);
+                }
+            }
+
             DB::commit();
             return back()->with('success', 'Data siswa berhasil ditambahkan.');
 
@@ -96,6 +147,70 @@ class StudentController extends Controller
                 'alamat' => $request->alamat,
                 'telepon' => $request->telepon,
             ]);
+
+            // Handle Parent Data (Update/Link)
+            if ($request->filled('parent_email') || $request->filled('parent_nik')) {
+                $parentProfile = null;
+
+                // 1. Try to find existing linked parent
+                $existingParent = $student->parents->first();
+
+                // If NIK/Email matches existing parent, we just update details
+                if (
+                    $existingParent &&
+                    (($request->filled('parent_nik') && $existingParent->nik === $request->parent_nik) ||
+                        ($request->filled('parent_email') && $existingParent->user->email === $request->parent_email))
+                ) {
+
+                    $parentProfile = $existingParent;
+                    // Update details
+                    if ($request->filled('parent_name'))
+                        $parentProfile->user->update(['name' => $request->parent_name]);
+                    if ($request->filled('parent_phone'))
+                        $parentProfile->update(['phone_alternate' => $request->parent_phone]);
+                } else {
+                    // Logic for finding/creating NEW parent link (Similar to Store)
+                    if ($request->filled('parent_nik')) {
+                        $parentProfile = \App\Models\StudentParent::where('nik', $request->parent_nik)->first();
+                    }
+                    if (!$parentProfile && $request->filled('parent_email')) {
+                        $parentUser = User::where('email', $request->parent_email)->first();
+                        if ($parentUser) {
+                            $parentProfile = $parentUser->studentParent ?? \App\Models\StudentParent::create([
+                                'user_id' => $parentUser->id,
+                                'nik' => $request->parent_nik,
+                                'phone_alternate' => $request->parent_phone
+                            ]);
+                        }
+                    }
+                    if (!$parentProfile && $request->filled('parent_email')) {
+                        $parentUser = User::create([
+                            'name' => $request->parent_name ?? 'Orang Tua',
+                            'email' => $request->parent_email,
+                            'password' => Hash::make('password'),
+                            'role' => UserRole::ORANG_TUA,
+                            'phone_number' => $request->parent_phone,
+                        ]);
+                        $parentProfile = \App\Models\StudentParent::create([
+                            'user_id' => $parentUser->id,
+                            'nik' => $request->parent_nik,
+                            'phone_alternate' => $request->parent_phone,
+                        ]);
+                    }
+                }
+
+                // Sync (Attach new if changed, keep old if same? Usually replace main parent)
+                // For safety, let's syncWithoutDetaching to avoid breaking other links, 
+                // but usually a student has 1 main parent account managed here.
+                if ($parentProfile) {
+                    $parentProfile->students()->syncWithoutDetaching([
+                        $student->id => [
+                            'relation_type' => $request->relation_type ?? 'Wali',
+                            'is_guardian' => true
+                        ]
+                    ]);
+                }
+            }
 
             DB::commit();
             return back()->with('success', 'Data siswa berhasil diperbarui.');
@@ -164,10 +279,10 @@ class StudentController extends Controller
             DB::beginTransaction();
 
             $student = Student::findOrFail($id);
-            
+
             // Should validate logic (e.g., if transferred/graduated, remove from class?)
             // For now, let's just update as requested.
-            
+
             $updateData = [
                 'status' => $request->status,
             ];

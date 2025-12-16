@@ -10,15 +10,15 @@ class TeacherController extends Controller
     public function index()
     {
         $teacher = \Illuminate\Support\Facades\Auth::user()->teacher;
-        
+
         // 1. Total Courses in Active Academic Year
         $activeAcademicYearId = \App\Models\AcademicYear::where('school_id', $teacher->user->school_id)
-                                    ->where('is_active', true)
-                                    ->value('id');
+            ->where('is_active', true)
+            ->value('id');
 
         $activeCoursesQuery = \App\Models\Course::where('teacher_id', $teacher->id)
-                                ->where('academic_year_id', $activeAcademicYearId);
-        
+            ->where('academic_year_id', $activeAcademicYearId);
+
         $totalActiveCourses = $activeCoursesQuery->count();
 
         // 2. Total Unique Students in Active Classes
@@ -28,75 +28,89 @@ class TeacherController extends Controller
         // 3. Active Assignments (Due date > Now) across all teacher's courses (all years or just active? Assuming all applicable)
         // Usually dashboard focuses on active workload, so let's stick to active courses assignments or all future assignments.
         // Let's filter by assignments in the teacher's courses where due_date is in future.
-        $activeAssignmentsCount = \App\Models\Assignment::whereHas('course', function($q) use ($teacher) {
+        $activeAssignmentsCount = \App\Models\Assignment::whereHas('course', function ($q) use ($teacher) {
             $q->where('teacher_id', $teacher->id);
         })->where('due_date', '>', now())->count();
 
         // 4. Average Attendance (Percentage of 'present' status)
         // Formula: (Total 'present' / Total attendance records) * 100
-        $attendanceQuery = \App\Models\Attendance::whereHas('course', function($q) use ($teacher, $activeAcademicYearId) {
+        $attendanceQuery = \App\Models\Attendance::whereHas('course', function ($q) use ($teacher, $activeAcademicYearId) {
             $q->where('teacher_id', $teacher->id)
-              ->where('academic_year_id', $activeAcademicYearId); // Limit to active year for relevance
+                ->where('academic_year_id', $activeAcademicYearId); // Limit to active year for relevance
         });
-        
+
         $totalAttendanceRecords = $attendanceQuery->count();
         $totalPresent = $attendanceQuery->where('status', 'present')->count();
         $averageAttendance = $totalAttendanceRecords > 0 ? round(($totalPresent / $totalAttendanceRecords) * 100, 1) : 0;
 
         // 5. Chart Data: Students per Class (Top 5 largest classes? or all active?)
         $studentsPerClass = $activeCoursesQuery->with('classroom')
-                            ->get()
-                            ->map(function($course) {
-                                return [
-                                    'class_name' => $course->classroom->name ?? 'Unknown',
-                                    'student_count' => $course->classroom->students()->count()
-                                ];
-                            })->values();
+            ->get()
+            ->map(function ($course) {
+                return [
+                    'class_name' => $course->classroom->name ?? 'Unknown',
+                    'student_count' => $course->classroom->students()->count()
+                ];
+            })->values();
 
         // 6. 3 Active Courses (Card Model)
-        $activeCourses = $activeCoursesQuery->with(['classroom' => function($q) {
-                                $q->withCount('students');
-                            }, 'subject'])
-                            ->withCount(['materials'])
-                            ->latest()
-                            ->take(3)
-                            ->get();
+        $activeCourses = $activeCoursesQuery->with([
+            'classroom' => function ($q) {
+                $q->withCount('students');
+            },
+            'subject'
+        ])
+            ->withCount(['materials'])
+            ->latest()
+            ->take(3)
+            ->get();
 
         // 7. Today's Schedule
         $today = strtolower(now()->format('l'));
-        $todaysClasses = \App\Models\ClassSchedule::whereHas('course', function($q) use ($teacher, $activeAcademicYearId) {
+        $todaysClasses = \App\Models\ClassSchedule::whereHas('course', function ($q) use ($teacher, $activeAcademicYearId) {
             $q->where('teacher_id', $teacher->id)
-              ->where('academic_year_id', $activeAcademicYearId);
+                ->where('academic_year_id', $activeAcademicYearId);
         })
-        ->where('day_of_week', $today)
-        ->with(['course.classroom', 'course.subject'])
-        ->orderBy('start_time')
-        ->get();
+            ->where('day_of_week', $today)
+            ->with(['course.classroom', 'course.subject'])
+            ->orderBy('start_time')
+            ->get();
 
-        // 7. Assignments Needing Grading (Assignments with submissions where score is null)
-        $pendingGrading = \App\Models\Assignment::whereHas('course', function($q) use ($teacher) {
-                                    $q->where('teacher_id', $teacher->id);
-                                })
-                                ->whereHas('submissions', function($q) {
-                                    $q->whereNull('score'); // Changed 'grade' to 'score'
-                                })
-                                ->with(['course.classroom', 'course.subject'])
-                                ->withCount(['submissions as pending_count' => function($q) {
-                                    $q->whereNull('score');
-                                }])
-                                ->latest('due_date')
-                                ->take(5)
-                                ->get();
+        // 8. Assignments Needing Grading (Assignments with submissions where score is null)
+        $pendingGrading = \App\Models\Assignment::whereHas('course', function ($q) use ($teacher) {
+            $q->where('teacher_id', $teacher->id);
+        })
+            ->whereHas('submissions', function ($q) {
+                $q->whereNull('score'); // Changed 'grade' to 'score'
+            })
+            ->with(['course.classroom', 'course.subject'])
+            ->withCount([
+                'submissions as pending_count' => function ($q) {
+                    $q->whereNull('score');
+                }
+            ])
+            ->latest('due_date')
+            ->take(5)
+            ->get();
+
+        // 9. Homeroom Logic (Cek apakah guru ini adalah wali kelas)
+        $homeroomClass = null;
+        if ($activeAcademicYearId) {
+            $homeroomClass = \App\Models\Classroom::where('teacher_id', $teacher->id)
+                ->where('academic_year_id', $activeAcademicYearId)
+                ->first();
+        }
 
         return view('dashboard.school.teacher', compact(
-            'totalActiveCourses', 
-            'totalStudents', 
-            'activeAssignmentsCount', 
+            'totalActiveCourses',
+            'totalStudents',
+            'activeAssignmentsCount',
             'averageAttendance',
             'studentsPerClass',
             'activeCourses',
             'pendingGrading',
-            'todaysClasses'
+            'todaysClasses',
+            'homeroomClass' // Added variable
         ));
     }
 
@@ -104,11 +118,14 @@ class TeacherController extends Controller
     {
         $teacher = \Illuminate\Support\Facades\Auth::user()->teacher;
         $courses = \App\Models\Course::where('teacher_id', $teacher->id)
-                    ->with(['classroom' => function($q) {
-                        $q->withCount('students');
-                    }, 'subject'])
-                    ->withCount(['materials'])
-                    ->get();
+            ->with([
+                'classroom' => function ($q) {
+                    $q->withCount('students');
+                },
+                'subject'
+            ])
+            ->withCount(['materials'])
+            ->get();
 
         return view('pages.guru.courses.index', compact('courses'));
     }
@@ -116,17 +133,17 @@ class TeacherController extends Controller
     public function show($id)
     {
         $course = \App\Models\Course::with(['classroom.students.user', 'materials', 'assignments', 'subject'])
-                    ->withCount(['materials', 'assignments'])
-                    ->findOrFail($id);
+            ->withCount(['materials', 'assignments'])
+            ->findOrFail($id);
 
         // Security check: Ensure course belongs to teacher
         $teacher = \Illuminate\Support\Facades\Auth::user()->teacher;
-        if($course->teacher_id !== $teacher->id) {
+        if ($course->teacher_id !== $teacher->id) {
             abort(403, 'Unauthorized access to this course');
         }
-        
+
         $totalStudents = $course->classroom->students()->count();
-        
+
         // Calculate total meetings based on unique attendance dates
         $totalMeetings = $course->attendances()->distinct('date')->count('date');
 
@@ -157,10 +174,10 @@ class TeacherController extends Controller
         ]);
 
         $course = \App\Models\Course::findOrFail($id);
-        
+
         // Auth check
         $teacher = \Illuminate\Support\Facades\Auth::user()->teacher;
-        if($course->teacher_id !== $teacher->id) {
+        if ($course->teacher_id !== $teacher->id) {
             abort(403);
         }
 
@@ -174,7 +191,7 @@ class TeacherController extends Controller
             'present' => 'present',
             'permission' => 'permission',
             'sick' => 'sick',
-            'absent' => 'absent' 
+            'absent' => 'absent'
         ];
 
         foreach ($request->attendance as $studentId => $status) {
@@ -199,19 +216,19 @@ class TeacherController extends Controller
     public function getAttendanceByDate($id, $date)
     {
         $course = \App\Models\Course::findOrFail($id);
-        
+
         // Auth check
         $teacher = \Illuminate\Support\Facades\Auth::user()->teacher;
-        if($course->teacher_id !== $teacher->id) {
+        if ($course->teacher_id !== $teacher->id) {
             abort(403);
         }
 
         $attendances = \App\Models\Attendance::where('course_id', $id)
-                        ->where('date', $date)
-                        ->get()
-                        ->mapWithKeys(function($item) {
-                            return [$item->student_id => $item->status];
-                        });
+            ->where('date', $date)
+            ->get()
+            ->mapWithKeys(function ($item) {
+                return [$item->student_id => $item->status];
+            });
 
         return response()->json($attendances);
     }
@@ -225,10 +242,10 @@ class TeacherController extends Controller
         ]);
 
         $course = \App\Models\Course::findOrFail($id);
-        
+
         // Auth check
         $teacher = \Illuminate\Support\Facades\Auth::user()->teacher;
-        if($course->teacher_id !== $teacher->id) {
+        if ($course->teacher_id !== $teacher->id) {
             abort(403);
         }
 
@@ -249,20 +266,20 @@ class TeacherController extends Controller
     public function destroyMaterial($id)
     {
         $material = \App\Models\CourseMaterial::findOrFail($id);
-        
-         // Auth check via course
+
+        // Auth check via course
         $teacher = \Illuminate\Support\Facades\Auth::user()->teacher;
-        if($material->course->teacher_id !== $teacher->id) {
+        if ($material->course->teacher_id !== $teacher->id) {
             abort(403);
         }
-        
+
         // Delete file
-        if(\Illuminate\Support\Facades\Storage::disk('public')->exists($material->file_path)) {
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($material->file_path)) {
             \Illuminate\Support\Facades\Storage::disk('public')->delete($material->file_path);
         }
-        
+
         $material->delete();
-        
+
         return back()->with('success', 'Materi berhasil dihapus.');
     }
 
@@ -275,10 +292,10 @@ class TeacherController extends Controller
         ]);
 
         $course = \App\Models\Course::findOrFail($id);
-        
+
         // Auth check
         $teacher = \Illuminate\Support\Facades\Auth::user()->teacher;
-        if($course->teacher_id !== $teacher->id) {
+        if ($course->teacher_id !== $teacher->id) {
             abort(403);
         }
 
@@ -295,10 +312,10 @@ class TeacherController extends Controller
     public function updateMaterial(Request $request, $id)
     {
         $material = \App\Models\CourseMaterial::findOrFail($id);
-        
+
         // Auth check
         $teacher = \Illuminate\Support\Facades\Auth::user()->teacher;
-        if($material->course->teacher_id !== $teacher->id) {
+        if ($material->course->teacher_id !== $teacher->id) {
             abort(403);
         }
 
@@ -310,13 +327,13 @@ class TeacherController extends Controller
 
         if ($request->hasFile('file')) {
             // Delete old file
-            if(\Illuminate\Support\Facades\Storage::disk('public')->exists($material->file_path)) {
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($material->file_path)) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($material->file_path);
             }
-            
+
             $file = $request->file('file');
             $path = $file->store('materials/' . $material->course_id, 'public');
-            
+
             $material->file_path = $path;
             $material->file_type = $file->getClientOriginalExtension();
         }
@@ -333,10 +350,10 @@ class TeacherController extends Controller
     public function updateAssignment(Request $request, $id)
     {
         $assignment = \App\Models\Assignment::findOrFail($id);
-        
+
         // Auth check
         $teacher = \Illuminate\Support\Facades\Auth::user()->teacher;
-        if($assignment->course->teacher_id !== $teacher->id) {
+        if ($assignment->course->teacher_id !== $teacher->id) {
             abort(403);
         }
 
@@ -358,10 +375,10 @@ class TeacherController extends Controller
     public function showAssignment($id)
     {
         $assignment = \App\Models\Assignment::with(['course.classroom', 'course.subject'])->findOrFail($id);
-        
+
         // Auth check
         $teacher = \Illuminate\Support\Facades\Auth::user()->teacher;
-        if($assignment->course->teacher_id !== $teacher->id) {
+        if ($assignment->course->teacher_id !== $teacher->id) {
             abort(403);
         }
 
@@ -381,10 +398,10 @@ class TeacherController extends Controller
         ]);
 
         $assignment = \App\Models\Assignment::findOrFail($id);
-        
+
         // Auth check
         $teacher = \Illuminate\Support\Facades\Auth::user()->teacher;
-        if($assignment->course->teacher_id !== $teacher->id) {
+        if ($assignment->course->teacher_id !== $teacher->id) {
             abort(403);
         }
 

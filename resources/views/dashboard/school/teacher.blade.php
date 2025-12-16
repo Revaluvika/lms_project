@@ -3,29 +3,133 @@
 @section('title', 'Dashboard Guru')
 
 @section('content')
-<div class="p-6 space-y-8 max-w-7xl mx-auto">
+<div class="p-6 space-y-8 max-w-7xl mx-auto" x-data="{ activeTab: 'teaching' }">
     {{-- Header Section --}}
     <div class="relative bg-white rounded-2xl p-8 shadow-sm border border-gray-100 overflow-hidden">
         <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-50"></div>
         <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-gray-900">Halo, {{ explode(' ', auth()->user()->name)[0] }}! 👋</h1>
-                <p class="text-gray-500 mt-2 text-lg">Siap mengajar dan menginspirasi siswa hari ini?</p>
+                <p class="text-gray-500 mt-2 text-lg" x-text="activeTab === 'teaching' ? 'Siap mengajar dan menginspirasi siswa hari ini?' : 'Kelola kelas perwalian Anda dengan mudah.'"></p>
             </div>
-            <div class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
-                <div class="bg-blue-100 p-2 rounded-lg text-blue-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
+            
+            <div class="flex flex-col items-end gap-3">
+                {{-- Date Badge --}}
+                <div class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
+                    <div class="bg-blue-100 p-2 rounded-lg text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Hari Ini</p>
+                        <p class="text-sm font-bold text-gray-800">{{ now()->translatedFormat('l, d F Y') }}</p>
+                    </div>
                 </div>
-                <div>
-                    <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Hari Ini</p>
-                    <p class="text-sm font-bold text-gray-800">{{ now()->translatedFormat('l, d F Y') }}</p>
+
+                {{-- Dashboard Switcher for Homeroom Teachers --}}
+                @if(isset($homeroomClass) && $homeroomClass)
+                <div class="bg-gray-100 p-1 rounded-lg inline-flex relative">
+                    <button 
+                        @click="activeTab = 'teaching'"
+                        :class="activeTab === 'teaching' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'"
+                        class="px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        Mode Pengajar
+                    </button>
+                    <button 
+                        @click="activeTab = 'homeroom'"
+                        :class="activeTab === 'homeroom' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'"
+                        class="px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        Mode Wali Kelas
+                    </button>
                 </div>
+                @endif
             </div>
         </div>
     </div>
 
+
+
+    {{-- HOMEROOM TEACHER SECTION (WALI KELAS) --}}
+    @if(isset($homeroomClass) && $homeroomClass)
+    <div x-show="activeTab === 'homeroom'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" style="display: none;">
+        <div class="space-y-6">
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3 mb-6">
+                <svg class="w-6 h-6 text-blue-600 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div>
+                    <h4 class="font-bold text-blue-800">Info Wali Kelas</h4>
+                    <p class="text-sm text-blue-600">Anda sedang dalam mode Wali Kelas. Gunakan menu di atas untuk mengelola data siswa kelas <strong>{{ $homeroomClass->name }}</strong>.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+             <div class="h-8 w-1 bg-indigo-600 rounded-full"></div>
+             <div>
+                <h2 class="text-xl font-bold text-gray-900">Wali Kelas: {{ $homeroomClass->name }}</h2>
+                <p class="text-sm text-gray-500">Kelola data siswa dan laporan kelas Anda.</p>
+             </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+             <!-- Homeroom: Total Students -->
+            <div class="bg-indigo-50 rounded-xl p-6 border border-indigo-100 shadow-sm relative overflow-hidden group">
+                <div class="flex justify-between items-start z-10 relative">
+                    <div>
+                        <div class="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">
+                            Siswa Perwalian</div>
+                        <div class="text-3xl font-bold text-slate-800">{{ $homeroomClass->students()->count() }}</div>
+                        <p class="text-xs text-indigo-500 mt-1">{{ $homeroomClass->name }}</p>
+                    </div>
+                </div>
+                 <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-indigo-200 rounded-full opacity-20 group-hover:scale-110 transition-transform"></div>
+            </div>
+
+            <!-- Homeroom: Quick Actions (Manajemen Anggota) -->
+            <a href="{{ route('homeroom.students.index') }}" class="bg-white rounded-xl p-6 border border-gray-100 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all group flex flex-col justify-center">
+                <div class="flex items-center gap-4">
+                     <div class="w-12 h-12 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">Data Siswa</h4>
+                        <p class="text-xs text-gray-500">Lihat anggota kelas</p>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Homeroom: Quick Actions (Leger) -->
+            <a href="{{ route('homeroom.leger.index') }}" class="bg-white rounded-xl p-6 border border-gray-100 shadow-sm hover:shadow-md hover:border-purple-200 transition-all group flex flex-col justify-center">
+                <div class="flex items-center gap-4">
+                     <div class="w-12 h-12 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-900 group-hover:text-purple-600 transition-colors">Leger Nilai</h4>
+                        <p class="text-xs text-gray-500">Rekap nilai siswa</p>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Homeroom: Quick Actions (Rapor) -->
+            <a href="{{ route('homeroom.report.index') }}" class="bg-white rounded-xl p-6 border border-gray-100 shadow-sm hover:shadow-md hover:border-orange-200 transition-all group flex flex-col justify-center">
+                <div class="flex items-center gap-4">
+                     <div class="w-12 h-12 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center group-hover:bg-orange-600 group-hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-900 group-hover:text-orange-600 transition-colors">Input Rapor</h4>
+                        <p class="text-xs text-gray-500">Catatan & Ekstrakurikuler</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+    </div>
+    @endif
+
+    {{-- TEACHING SECTION (DEFAULT) --}}
+    <div x-show="activeTab === 'teaching'" class="space-y-8" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100">
     {{-- Stats Grid --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {{-- Card 1: Total Classes --}}
@@ -221,6 +325,7 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 </div>
 

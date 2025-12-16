@@ -39,6 +39,18 @@ class ClassroomController extends Controller
             'teacher_id' => 'nullable|exists:teachers,id',
         ]);
 
+        // Check if teacher is already a homeroom teacher in this academic year
+        if ($request->teacher_id) {
+            $existingAssignment = Classroom::where('school_id', Auth::user()->school_id)
+                ->where('academic_year_id', $request->academic_year_id)
+                ->where('teacher_id', $request->teacher_id)
+                ->exists();
+
+            if ($existingAssignment) {
+                return redirect()->back()->withErrors(['teacher_id' => 'Guru ini sudah menjadi wali kelas di kelas lain pada tahun ajaran ini.'])->withInput();
+            }
+        }
+
         Classroom::create([
             'school_id' => Auth::user()->school_id,
             'academic_year_id' => $request->academic_year_id,
@@ -60,6 +72,19 @@ class ClassroomController extends Controller
         ]);
 
         $classroom = Classroom::where('school_id', Auth::user()->school_id)->findOrFail($id);
+        // Check for duplicate homeroom assignment, excluding current classroom
+        if ($request->teacher_id) {
+            $existingAssignment = Classroom::where('school_id', Auth::user()->school_id)
+                ->where('academic_year_id', $request->academic_year_id)
+                ->where('teacher_id', $request->teacher_id)
+                ->where('id', '!=', $id)
+                ->exists();
+
+            if ($existingAssignment) {
+                return redirect()->back()->withErrors(['teacher_id' => 'Guru ini sudah menjadi wali kelas di kelas lain pada tahun ajaran ini.'])->withInput();
+            }
+        }
+
         $classroom->update([
             'academic_year_id' => $request->academic_year_id,
             'name' => $request->name,

@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ReportCard extends Model
 {
+    use \Illuminate\Database\Eloquent\Factories\HasFactory;
+
     protected $table = 'report_cards';
 
     protected $fillable = [
