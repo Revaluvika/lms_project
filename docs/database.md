@@ -336,14 +336,31 @@ Finalized grades for a student in a specific subject and academic year.
 | ---------------- | ---------- | ------------------------------------- |
 | id               | bigInteger | Primary Key                           |
 | school_id        | foreignId  | FK to `schools`                       |
-| academic_year_id | foreignId  | FK to `academic_years`                |
+| academic_year_id | foreignId  | FK to `academic_years` (Nullable)     |
 | uploaded_by      | foreignId  | FK to `users`                         |
-| reviewed_by      | foreignId  | FK to `users`                         |
+| reviewed_by      | foreignId  | FK to `users` (Nullable)              |
 | title            | string     |                                       |
 | report_type      | enum       | `Bulanan`, `Semester`, `Tahunan`, ... |
+| report_period    | date       | Reference date for the report         |
+| description      | text       | Description/Notes from uploader       |
 | status           | enum       | `submitted`, `reviewed`, ...          |
 | file_path        | string     |                                       |
+| dinas_feedback   | text       | Feedback from Dinas                   |
+| reviewed_at      | timestamp  |                                       |
 | timestamps       | timestamp  |                                       |
+
+#### School Report Histories (`school_report_histories`)
+
+Stores previous versions of reports that have been revised.
+
+| Column           | Type       | Description                                   |
+| ---------------- | ---------- | --------------------------------------------- |
+| id               | bigInteger | Primary Key                                   |
+| school_report_id | foreignId  | FK to `school_reports`                        |
+| file_path        | string     | Path to the archived file                     |
+| dinas_feedback   | text       | Feedback received for this version            |
+| status           | enum       | Status of this version (e.g. revision_needed) |
+| timestamps       | timestamp  |                                               |
 
 #### Student Term Records (`student_term_records`)
 
@@ -388,6 +405,7 @@ erDiagram
     Schools ||--|{ Subjects : has
     Schools ||--o{ SchoolEvents : organizes
     Schools ||--o{ SchoolReports : submits
+    SchoolReports ||--o{ SchoolReportHistories : has_history
 
     AcademicYears ||--|{ Classrooms : contains
 
