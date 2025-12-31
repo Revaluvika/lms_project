@@ -31,7 +31,6 @@ use App\Http\Controllers\SchoolRegistrationController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SubjectController;
-use App\Http\Controllers\SuperadminController;
 use App\Http\Controllers\TeacherController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Support\Facades\Auth;
@@ -98,6 +97,7 @@ Route::middleware(['auth', 'verified'])->get('/dashboard', [DashboardController:
  */
 Route::middleware(['auth', 'verified', 'role:dinas'])->group(function () {
     Route::get('/dashboard/dinas', [DinasController::class, 'index'])->name('dashboard.dinas');
+    Route::get('/dashboard/dinas/student-chart', [DinasController::class, 'getStudentGrowthData'])->name('dinas.student.chart');
 
     // School Reports Management
     Route::get('/dinas/reports', [DinasReportController::class, 'incoming'])->name('dinas.reports.incoming');
@@ -362,10 +362,4 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/rapor/pdf/{id}', [RaporPdfController::class, 'generate'])->name('rapor.pdf');
 });
 
-// 7. Superadmin
-Route::middleware(['auth', 'verified'])->get('/superadmin/dashboard', [SuperadminController::class, 'index'])->name('superadmin.dashboard');
-
-// 8. Error Pages
-Route::get('/school/inactive', function () {
-    return view('errors.school_inactive');
-})->name('school.inactive')->middleware('auth');
+// 7. Superadmin (Removed)

@@ -216,7 +216,7 @@
                         <div class="mt-1">
                             <input type="text" name="school_name" id="school_name" required value="{{ old('school_name') }}"
                                 class="focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-3 px-4 placeholder-gray-400"
-                                placeholder="SD Negeri 1 Surabaya">
+                                placeholder="SMA Negeri 1 Surabaya">
                             @error('school_name') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
                     </div>
@@ -227,11 +227,8 @@
                             <select id="education_level" name="education_level" required
                                 class="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                                 <option value="" disabled selected>Pilih Jenjang</option>
-                                <option value="SD" {{ old('education_level') == 'SD' ? 'selected' : '' }}>SD</option>
-                                <option value="SMP" {{ old('education_level') == 'SMP' ? 'selected' : '' }}>SMP</option>
                                 <option value="SMA" {{ old('education_level') == 'SMA' ? 'selected' : '' }}>SMA</option>
                                 <option value="SMK" {{ old('education_level') == 'SMK' ? 'selected' : '' }}>SMK</option>
-                                <option value="SLB" {{ old('education_level') == 'SLB' ? 'selected' : '' }}>SLB</option>
                             </select>
                             @error('education_level') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>

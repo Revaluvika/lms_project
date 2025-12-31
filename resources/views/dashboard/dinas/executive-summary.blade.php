@@ -94,7 +94,12 @@
 
         {{-- Chart 2: Student Growth --}}
         <div class="bg-white shadow-sm rounded-xl p-6">
-            <h3 class="font-bold text-gray-700 mb-4">Tren Perkembangan Siswa (5 Tahun)</h3>
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="studentChartTitle" class="font-bold text-gray-700">Tren Perkembangan Siswa (5 Tahun)</h3>
+                <button id="studentChartBackBtn" onclick="resetChart()" class="hidden text-sm text-blue-500 hover:text-blue-700 font-medium bg-blue-50 px-3 py-1 rounded-md transition-colors">
+                    &larr; Reset Zoom
+                </button>
+            </div>
             <div class="relative h-72 w-full">
                 <canvas id="studentGrowthChart"></canvas>
             </div>
@@ -143,9 +148,13 @@
         }
     });
 
-    // Chart 2: Student Growth (Line)
+    // Chart 2: Student Growth (Line) - Drill Down Enabled
     const ctxStudent = document.getElementById('studentGrowthChart').getContext('2d');
-    new Chart(ctxStudent, {
+    let studentChartLevel = 'year'; // year, month, date
+    let currentYear = null;
+    let currentMonth = null;
+
+    const studentChart = new Chart(ctxStudent, {
         type: 'line',
         data: {
             labels: studentLabels,
@@ -159,18 +168,96 @@
                 pointBorderColor: 'rgba(16, 185, 129, 1)',
                 pointRadius: 4,
                 fill: true,
-                tension: 0.3 // Smooth curves
+                tension: 0.3
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: {
-                    beginAtZero: true
+                y: { beginAtZero: true }
+            },
+            onClick: (e) => {
+                const points = studentChart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
+                if (points.length) {
+                    const firstPoint = points[0];
+                    const label = studentChart.data.labels[firstPoint.index];
+                    handleDrillDown(label);
                 }
+            },
+            onHover: (event, chartElement) => {
+                event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
             }
         }
     });
+
+    async function handleDrillDown(label) {
+        let url = "{{ route('dinas.student.chart') }}";
+        let params = {};
+
+        if (studentChartLevel === 'year') {
+            // Label is Year (e.g., "2024")
+            currentYear = label;
+            params = { year: currentYear };
+        } else if (studentChartLevel === 'month') {
+            // Label is Month (e.g., "Jan") - need to convert to number
+            // Or backend returns "Jan", we can map it or send index.
+            // Simplified: Expect label to be mappable or use index if possible. 
+            // Better: Backend sends full month name? or we use index from array.
+            // Let's rely on label matching or finding index.
+            // To be safe, let's map standard English short months to numbers
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            let monthIndex = months.indexOf(label) + 1;
+            
+            if (monthIndex === 0) {
+                 // Try parsing date if format differs
+                 return; 
+            }
+            currentMonth = monthIndex;
+            params = { year: currentYear, month: currentMonth };
+        } else {
+            return; // No further drill down
+        }
+
+        fetchData(url, params);
+    }
+
+    async function fetchData(url, params) {
+        const query = new URLSearchParams(params).toString();
+        try {
+            const response = await fetch(`${url}?${query}`);
+            const result = await response.json();
+            
+            updateChart(result);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    }
+
+    function updateChart(result) {
+        studentChart.data.labels = result.labels;
+        studentChart.data.datasets[0].data = result.data;
+        studentChart.update();
+
+        // Update State
+        studentChartLevel = result.level;
+        document.getElementById('studentChartTitle').innerText = result.title;
+        
+        // Show/Hide Back Button
+        const backBtn = document.getElementById('studentChartBackBtn');
+        if (studentChartLevel !== 'year') {
+            backBtn.classList.remove('hidden');
+        } else {
+            backBtn.classList.add('hidden');
+        }
+    }
+
+    function resetChart() {
+        const url = "{{ route('dinas.student.chart') }}";
+        fetchData(url, {}); // Default params for Year view
+        // Reset trackers
+        currentYear = null;
+        currentMonth = null;
+    }
 </script>
 @endsection
