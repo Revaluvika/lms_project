@@ -23,7 +23,6 @@
 
         // Determine dashboard route based on role
         $dashboardRoute = match($role) {
-            UserRole::SUPERADMIN => 'superadmin.dashboard', // Added Superadmin Handling
             UserRole::DINAS => 'dashboard.dinas',
             UserRole::ADMIN_DINAS => 'dashboard.dinas.admin',
             UserRole::KEPALA_SEKOLAH => 'dashboard.headmaster',
@@ -50,7 +49,7 @@
         
         {{-- DASHBOARD --}}
         <a href="{{ route($dashboardRoute) }}" 
-           class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['dashboard.*', 'superadmin.dashboard']) }}">
+           class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive(['dashboard.*']) }}">
             <div class="w-5 h-5 transition-transform group-hover:scale-110">
                 @include('components.icons.dashboard')
             </div>
@@ -64,13 +63,7 @@
             <div class="mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider px-3">
                 Administrasi
             </div>
-            <a href="{{ route('superadmin.dashboard') }}" 
-               class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group {{ isActive('superadmin.*') }}">
-                <div class="w-5 h-5 transition-transform group-hover:scale-110">
-                    @include('components.icons.dashboard')
-                </div>
-                <span class="font-medium">Superadmin</span>
-            </a>
+
 
             <div class="mt-6 mb-2 text-xs font-semibold text-slate-500 uppercase tracking-wider px-3">
                 e-Laporan
